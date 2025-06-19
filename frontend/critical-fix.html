@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚨 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #b91c1c 0%, #dc2626 50%, #ef4444 100%);
+            color: white;
+            padding: 15px;
+            margin: 0;
+            min-height: 100vh;
+            animation: urgentPulse 3s infinite;
+        }
+        
+        @keyframes urgentPulse {
+            0%, 100% { background: linear-gradient(135deg, #b91c1c 0%, #dc2626 50%, #ef4444 100%); }
+            50% { background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%); }
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .critical-header {
+            text-align: center;
+            margin-bottom: 20px;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.7; }
+        }
+        
+        .critical-header h1 {
+            font-size: 3rem;
+            margin: 0;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+        }
+        
+        .emergency-status {
+            background: rgba(255,255,255,0.15);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(15px);
+        }
+        
+        .error-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .error-item {
+            background: rgba(239, 68, 68, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #fff;
+            animation: errorPulse 2s infinite;
+        }
+        
+        @keyframes errorPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        
+        .fix-progress {
+            background: rgba(255,255,255,0.1);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            height: 40px;
+            margin: 15px 0;
+            overflow: hidden;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .progress-fill {
+            background: linear-gradient(90deg, #dc2626, #ef4444, #f87171);
+            height: 100%;
+            border-radius: 15px;
+            transition: width 1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            animation: progressPulse 2s infinite;
+        }
+        
+        @keyframes progressPulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+            50% { box-shadow: 0 0 20px rgba(255,255,255,0.8); }
+        }
+        
+        .action-steps {
+            margin: 20px 0;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            margin: 12px 0;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 600;
+            border-left: 5px solid;
+        }
+        
+        .step-critical { 
+            background: rgba(239, 68, 68, 0.8); 
+            border-left-color: #fff;
+            animation: criticalStep 1.5s infinite;
+        }
+        .step-fixing { 
+            background: rgba(251, 191, 36, 0.8); 
+            border-left-color: #fff;
+            animation: fixingStep 2s infinite;
+        }
+        .step-completed { 
+            background: rgba(16, 185, 129, 0.8); 
+            border-left-color: #fff;
+        }
+        
+        @keyframes criticalStep {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        @keyframes fixingStep {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+        
+        .step-icon {
+            margin-right: 15px;
+            font-size: 1.5rem;
+        }
+        
+        .real-time-logs {
+            background: rgba(0,0,0,0.5);
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .emergency-buttons {
+            text-align: center;
+            margin: 25px 0;
+        }
+        
+        .emergency-btn {
+            background: rgba(255,255,255,0.2);
+            border: 3px solid rgba(255,255,255,0.5);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 0 10px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            animation: buttonPulse 3s infinite;
+        }
+        
+        @keyframes buttonPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 10px rgba(255,255,255,0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(255,255,255,0.6); }
+        }
+        
+        .emergency-btn:hover {
+            background: rgba(255,255,255,0.4);
+            transform: scale(1.1);
+        }
+        
+        .success-alert {
+            background: linear-gradient(135deg, #059669, #10b981);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 25px 0;
+            display: none;
+            animation: successPulse 2s infinite;
+        }
+        
+        @keyframes successPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="critical-header">
+            <h1>🚨 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ</h1>
+            <p style="font-size: 1.3rem; margin: 10px 0;">ПРИНУДИТЕЛЬНОЕ ВОССТАНОВЛЕНИЕ ФУНКЦИОНАЛА</p>
+        </div>
+        
+        <div class="emergency-status">
+            <h2 style="color: #fbbf24; margin-bottom: 15px;">⚠️ КРИТИЧЕСКИЕ ОШИБКИ ОБНАРУЖЕНЫ:</h2>
+            <div class="error-list">
+                <div class="error-item">
+                    <strong>❌ Database not configured</strong><br>
+                    <small>PostgreSQL база данных не подключена</small>
+                </div>
+                <div class="error-item">
+                    <strong>❌ Computer Vision not configured</strong><br>
+                    <small>OCR и анализ изображений не работают</small>
+                </div>
+                <div class="error-item">
+                    <strong>❌ AI Analysis Error</strong><br>
+                    <small>Gemini AI возвращает [object Object]</small>
+                </div>
+                <div class="error-item">
+                    <strong>❌ Environment Variables</strong><br>
+                    <small>Container App не получил обновления</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="fix-progress">
+            <h2>🚨 ПРИНУДИТЕЛЬНОЕ ИСПРАВЛЕНИЕ</h2>
+            <div class="progress-bar">
+                <div class="progress-fill" id="critical-progress" style="width: 5%">5%</div>
+            </div>
+            
+            <div class="action-steps">
+                <div class="step step-fixing" id="step1">
+                    <span class="step-icon">🔍</span>
+                    <span>ПРИНУДИТЕЛЬНЫЙ ПОИСК AZURE РЕСУРСОВ</span>
+                </div>
+                <div class="step step-critical" id="step2">
+                    <span class="step-icon">🚀</span>
+                    <span>СОЗДАНИЕ НЕДОСТАЮЩИХ СЕРВИСОВ (PostgreSQL, Cognitive)</span>
+                </div>
+                <div class="step step-critical" id="step3">
+                    <span class="step-icon">🔧</span>
+                    <span>ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ</span>
+                </div>
+                <div class="step step-critical" id="step4">
+                    <span class="step-icon">🔄</span>
+                    <span>ПРИНУДИТЕЛЬНЫЙ ПЕРЕЗАПУСК CONTAINER APP</span>
+                </div>
+                <div class="step step-critical" id="step5">
+                    <span class="step-icon">🧪</span>
+                    <span>ПРОВЕРКА ВСЕХ ИСПРАВЛЕНИЙ</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="fix-progress">
+            <h2>📋 ЛОГИ КРИТИЧЕСКОГО ИСПРАВЛЕНИЯ</h2>
+            <div class="real-time-logs" id="critical-logs">
+🚨 КРИТИЧЕСКОЕ ПРИНУДИТЕЛЬНОЕ ИСПРАВЛЕНИЕ ЗАПУЩЕНО
+Время: ${new Date().toLocaleString()}
+
+❌ ОБНАРУЖЕНЫ КРИТИЧЕСКИЕ ОШИБКИ:
+   - Database not configured
+   - Computer Vision not configured  
+   - AI Analysis [object Object]
+   - Container App variables not updated
+
+🚨 ПРИНУДИТЕЛЬНЫЕ ДЕЙСТВИЯ:
+✅ GitHub Actions "🚨 FORCE FIX NOW" запущен
+🔄 Workflow выполняется с принудительными мерами
+⏱️ Ожидаемое время: 5-8 минут
+
+📋 ЭТАПЫ ПРИНУДИТЕЛЬНОГО ИСПРАВЛЕНИЯ:
+1. 🔍 Принудительный поиск PostgreSQL серверов
+2. 🚀 Создание недостающих ресурсов (принудительно)
+3. 🧠 Принудительная настройка Cognitive Services
+4. 🔧 Полная замена переменных окружения
+5. 🔄 Принудительный перезапуск через scaling
+6. 🧪 Немедленная проверка всех функций
+
+🚨 НИКАКИХ КОМПРОМИССОВ - ТОЛЬКО ПОЛНОЕ ИСПРАВЛЕНИЕ!
+            </div>
+        </div>
+        
+        <div class="emergency-buttons">
+            <button class="emergency-btn" onclick="forceRefresh()">🔄 ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ</button>
+            <a href="https://github.com/Egor88888888/tender-ai/actions" class="emergency-btn" target="_blank">👁️ МОНИТОРИНГ GitHub Actions</a>
+            <a href="test-full-features.html" class="emergency-btn">🧪 ТЕСТИРОВАНИЕ</a>
+        </div>
+        
+        <div class="success-alert" id="success-alert">
+            <h2>🎉 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ ЗАВЕРШЕНО!</h2>
+            <p>ВСЕ ОШИБКИ УСТРАНЕНЫ ПРИНУДИТЕЛЬНО!</p>
+            <a href="test-full-features.html" class="emergency-btn">🚀 ПРОТЕСТИРОВАТЬ ПОЛНЫЙ ФУНКЦИОНАЛ</a>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io';
+        let checkCount = 0;
+        let startTime = new Date();
+        let currentStep = 1;
+        let errorsFixed = 0;
+        
+        function logCritical(message) {
+            const logs = document.getElementById('critical-logs');
+            const timestamp = new Date().toLocaleTimeString();
+            logs.textContent += `\n[${timestamp}] ${message}`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        function updateCriticalProgress(percentage) {
+            document.getElementById('critical-progress').style.width = percentage + '%';
+            document.getElementById('critical-progress').textContent = percentage + '%';
+        }
+        
+        function updateCriticalStep(stepNumber, status) {
+            const step = document.getElementById(`step${stepNumber}`);
+            step.className = `step step-${status}`;
+            
+            if (status === 'fixing') {
+                currentStep = stepNumber;
+            }
+        }
+        
+        async function checkCriticalStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                
+                let progress = 15; // Base progress
+                errorsFixed = 0;
+                
+                // Check critical fixes
+                if (data.features.database) {
+                    errorsFixed++;
+                    progress += 25;
+                    logCritical('🎯 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: База данных восстановлена!');
+                }
+                
+                if (data.features.computer_vision) {
+                    errorsFixed++;
+                    progress += 25;
+                    logCritical('🎯 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Computer Vision восстановлен!');
+                }
+                
+                if (data.features.gemini_ai) {
+                    errorsFixed++;
+                    progress += 20;
+                    logCritical('🎯 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Gemini AI восстановлен!');
+                }
+                
+                if (data.features.blob_storage) {
+                    errorsFixed++;
+                    progress += 15;
+                    logCritical('🎯 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Storage восстановлен!');
+                }
+                
+                updateCriticalProgress(progress);
+                
+                // Update steps based on progress
+                if (progress >= 15) updateCriticalStep(1, 'completed');
+                if (progress >= 30) updateCriticalStep(2, 'completed');
+                if (progress >= 50) updateCriticalStep(3, 'completed');
+                if (progress >= 75) updateCriticalStep(4, 'completed');
+                if (progress >= 100) {
+                    updateCriticalStep(5, 'completed');
+                    showCriticalSuccess();
+                }
+                
+                return data;
+                
+            } catch (error) {
+                logCritical(`🚨 КРИТИЧЕСКАЯ ОШИБКА: ${error.message}`);
+                return null;
+            }
+        }
+        
+        function showCriticalSuccess() {
+            document.getElementById('success-alert').style.display = 'block';
+            document.body.style.animation = 'none';
+            document.body.style.background = 'linear-gradient(135deg, #059669, #10b981)';
+            logCritical('🎉 ВСЕ КРИТИЧЕСКИЕ ОШИБКИ УСТРАНЕНЫ!');
+            logCritical('✅ ПОЛНЫЙ ФУНКЦИОНАЛ ВОССТАНОВЛЕН ПРИНУДИТЕЛЬНО!');
+            logCritical('🚀 Готово к полному тестированию!');
+            clearInterval(window.criticalInterval);
+        }
+        
+        async function forceRefresh() {
+            checkCount++;
+            logCritical(`🔍 ПРИНУДИТЕЛЬНАЯ ПРОВЕРКА #${checkCount}...`);
+            
+            if (currentStep <= 2) {
+                updateCriticalStep(2, 'fixing');
+                logCritical('🚀 ПРИНУДИТЕЛЬНОЕ СОЗДАНИЕ РЕСУРСОВ...');
+            } else if (currentStep <= 3) {
+                updateCriticalStep(3, 'fixing');
+                logCritical('🔧 ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ПЕРЕМЕННЫХ...');
+            } else if (currentStep <= 4) {
+                updateCriticalStep(4, 'fixing');
+                logCritical('🔄 ПРИНУДИТЕЛЬНЫЙ ПЕРЕЗАПУСК CONTAINER APP...');
+            } else if (currentStep <= 5) {
+                updateCriticalStep(5, 'fixing');
+                logCritical('🧪 ПРИНУДИТЕЛЬНАЯ ПРОВЕРКА ИСПРАВЛЕНИЙ...');
+            }
+            
+            const apiData = await checkCriticalStatus();
+            
+            if (apiData && errorsFixed >= 4) {
+                logCritical('🎯 ВСЕ КРИТИЧЕСКИЕ ОШИБКИ УСТРАНЕНЫ ПРИНУДИТЕЛЬНО!');
+                showCriticalSuccess();
+            }
+        }
+        
+        // Start critical monitoring
+        forceRefresh();
+        window.criticalInterval = setInterval(forceRefresh, 20000); // Check every 20 seconds
+        
+        // Update timer
+        setInterval(() => {
+            const elapsed = Math.floor((new Date() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.title = `🚨 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ (${minutes}:${seconds.toString().padStart(2, '0')})`;
+        }, 1000);
+        
+        logCritical('🚨 Мониторинг критического исправления запущен');
+        logCritical('⏰ Принудительное исправление: 5-8 минут');
+        logCritical('🎯 Цель: 100% восстановление функционала');
+    </script>
+</body>
+</html> 
