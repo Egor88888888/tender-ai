@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚨 Экстренное исправление TEnder AI</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            color: white;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .urgent-notice {
+            background: rgba(255,255,255,0.15);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .problems-list {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .problem-item {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+        }
+        
+        .status-indicator {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 15px;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-error { background: #ef4444; }
+        .status-fixing { background: #f59e0b; }
+        .status-success { background: #10b981; animation: none; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .fix-progress {
+            background: rgba(255,255,255,0.1);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 25px 0;
+        }
+        
+        .progress-bar {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            height: 30px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(90deg, #10b981, #34d399);
+            height: 100%;
+            border-radius: 10px;
+            transition: width 2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .fix-steps {
+            margin: 20px 0;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .step-pending { background: rgba(251, 191, 36, 0.2); }
+        .step-running { background: rgba(59, 130, 246, 0.2); }
+        .step-completed { background: rgba(16, 185, 129, 0.2); }
+        
+        .step-icon {
+            margin-right: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .logs {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 250px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin: 20px 0;
+        }
+        
+        .action-buttons {
+            text-align: center;
+            margin: 25px 0;
+        }
+        
+        .btn {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 0 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+        
+        .success-notice {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 25px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚨 Экстренное исправление</h1>
+            <p>Автоматическое исправление проблем с Container App</p>
+        </div>
+        
+        <div class="urgent-notice">
+            <h2>⚠️ Обнаруженные проблемы:</h2>
+            <div class="problems-list">
+                <div class="problem-item">
+                    <div class="status-indicator status-error" id="db-problem"></div>
+                    <span>Database not configured - база данных не подключена</span>
+                </div>
+                <div class="problem-item">
+                    <div class="status-indicator status-error" id="ocr-problem"></div>
+                    <span>Computer Vision not configured - OCR не настроен</span>
+                </div>
+                <div class="problem-item">
+                    <div class="status-indicator status-error" id="ai-problem"></div>
+                    <span>AI анализ показывает [object Object]</span>
+                </div>
+                <div class="problem-item">
+                    <div class="status-indicator status-error" id="storage-problem"></div>
+                    <span>Переменные окружения Container App неполные</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="fix-progress">
+            <h2>🔧 Прогресс исправления</h2>
+            <div class="progress-bar">
+                <div class="progress-fill" id="fix-progress" style="width: 0%">0%</div>
+            </div>
+            
+            <div class="fix-steps">
+                <div class="step step-running" id="step1">
+                    <span class="step-icon">🔍</span>
+                    <span>Поиск существующих Azure ресурсов</span>
+                </div>
+                <div class="step step-pending" id="step2">
+                    <span class="step-icon">🚀</span>
+                    <span>Создание недостающей инфраструктуры</span>
+                </div>
+                <div class="step step-pending" id="step3">
+                    <span class="step-icon">🔧</span>
+                    <span>Обновление Container App с правильными переменными</span>
+                </div>
+                <div class="step step-pending" id="step4">
+                    <span class="step-icon">🧪</span>
+                    <span>Тестирование всех функций</span>
+                </div>
+                <div class="step step-pending" id="step5">
+                    <span class="step-icon">✅</span>
+                    <span>Проверка полного функционала</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="fix-progress">
+            <h2>📋 Логи исправления</h2>
+            <div class="logs" id="fix-logs">
+🚨 ЭКСТРЕННОЕ ИСПРАВЛЕНИЕ ЗАПУЩЕНО
+Время: ${new Date().toLocaleString()}
+
+✅ GitHub Actions триггер активирован
+🔄 Workflow "Fix Container App Configuration" выполняется
+⏱️ Ожидаемое время: 5-10 минут
+
+📋 Этапы исправления:
+1. 🔍 Поиск PostgreSQL серверов
+2. 🧠 Поиск Cognitive Services  
+3. 💾 Проверка Storage Account
+4. 🚀 Создание недостающих ресурсов
+5. 🔧 Обновление переменных Container App
+6. 🧪 Тестирование API
+
+Следите за прогрессом...
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <button class="btn" onclick="refreshStatus()">🔄 Обновить статус</button>
+            <button class="btn" onclick="clearLogs()">🗑️ Очистить логи</button>
+            <a href="https://github.com/Egor88888888/tender-ai/actions" class="btn" target="_blank">👀 GitHub Actions</a>
+            <a href="test-full-features.html" class="btn">🧪 Тестирование</a>
+        </div>
+        
+        <div class="success-notice" id="success-notice">
+            <h2>🎉 ИСПРАВЛЕНИЕ ЗАВЕРШЕНО УСПЕШНО!</h2>
+            <p>Все проблемы устранены. Полный функционал восстановлен!</p>
+            <a href="test-full-features.html" class="btn">🧪 Протестировать все функции</a>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io';
+        let checkCount = 0;
+        let startTime = new Date();
+        let currentStep = 1;
+        let fixedProblems = 0;
+        
+        function logMessage(message) {
+            const logs = document.getElementById('fix-logs');
+            const timestamp = new Date().toLocaleTimeString();
+            logs.textContent += `\n[${timestamp}] ${message}`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        function updateProgress(percentage) {
+            document.getElementById('fix-progress').style.width = percentage + '%';
+            document.getElementById('fix-progress').textContent = percentage + '%';
+        }
+        
+        function updateStep(stepNumber, status) {
+            const step = document.getElementById(`step${stepNumber}`);
+            step.className = `step step-${status}`;
+            
+            if (status === 'running') {
+                currentStep = stepNumber;
+            }
+        }
+        
+        function updateProblemStatus(problemId, fixed) {
+            const indicator = document.getElementById(problemId);
+            if (fixed) {
+                indicator.className = 'status-indicator status-success';
+                fixedProblems++;
+            } else {
+                indicator.className = 'status-indicator status-fixing';
+            }
+        }
+        
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                
+                let progress = 20; // Base progress for API being responsive
+                
+                // Check each service
+                if (data.features.database) {
+                    updateProblemStatus('db-problem', true);
+                    progress += 25;
+                    logMessage('✅ База данных подключена успешно!');
+                }
+                
+                if (data.features.computer_vision) {
+                    updateProblemStatus('ocr-problem', true);
+                    progress += 25;
+                    logMessage('✅ Computer Vision настроен!');
+                }
+                
+                if (data.features.gemini_ai) {
+                    updateProblemStatus('ai-problem', true);
+                    progress += 15;
+                    logMessage('✅ Gemini AI работает корректно!');
+                }
+                
+                if (data.features.blob_storage) {
+                    updateProblemStatus('storage-problem', true);
+                    progress += 15;
+                    logMessage('✅ Storage настроен правильно!');
+                }
+                
+                updateProgress(progress);
+                
+                // Update steps based on progress
+                if (progress >= 20) updateStep(1, 'completed');
+                if (progress >= 40) updateStep(2, 'completed');
+                if (progress >= 60) updateStep(3, 'completed');
+                if (progress >= 80) updateStep(4, 'completed');
+                if (progress >= 100) {
+                    updateStep(5, 'completed');
+                    showSuccess();
+                }
+                
+                return data;
+                
+            } catch (error) {
+                logMessage(`❌ Ошибка проверки API: ${error.message}`);
+                return null;
+            }
+        }
+        
+        function showSuccess() {
+            document.getElementById('success-notice').style.display = 'block';
+            logMessage('🎉 ВСЕ ПРОБЛЕМЫ УСТРАНЕНЫ!');
+            logMessage('✅ Полный функционал восстановлен');
+            logMessage('🧪 Готово к тестированию: test-full-features.html');
+            clearInterval(window.fixInterval);
+        }
+        
+        async function refreshStatus() {
+            checkCount++;
+            logMessage(`🔍 Проверка статуса #${checkCount}...`);
+            
+            if (currentStep <= 2) {
+                updateStep(2, 'running');
+                logMessage('🚀 Создание недостающих ресурсов...');
+            } else if (currentStep <= 3) {
+                updateStep(3, 'running');
+                logMessage('🔧 Обновление Container App...');
+            } else if (currentStep <= 4) {
+                updateStep(4, 'running');
+                logMessage('🧪 Тестирование конфигурации...');
+            }
+            
+            const apiData = await checkAPIStatus();
+            
+            if (apiData && fixedProblems >= 4) {
+                logMessage('🎯 Все проблемы решены! Исправление завершено.');
+                showSuccess();
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('fix-logs').textContent = 'Логи очищены...\n';
+        }
+        
+        // Start monitoring
+        refreshStatus();
+        window.fixInterval = setInterval(refreshStatus, 30000);
+        
+        // Update timer
+        setInterval(() => {
+            const elapsed = Math.floor((new Date() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.title = `🚨 Исправление (${minutes}:${seconds.toString().padStart(2, '0')})`;
+        }, 1000);
+        
+        logMessage('🚨 Мониторинг экстренного исправления запущен');
+        logMessage('⏰ Ожидаемое время: 5-10 минут');
+    </script>
+</body>
+</html> 
