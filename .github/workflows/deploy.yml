@@ -29,8 +29,10 @@ jobs:
           echo "Deploying infrastructure..."
           az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep
           echo "Getting ACR info..."
-          acr_server=$(az deployment group show --resource-group ${{ env.RG_NAME }} --name azuredeploy --query 'properties.outputs.acrLoginServer.value' --output tsv)
-          acr_name=$(az deployment group show --resource-group ${{ env.RG_NAME }} --name azuredeploy --query 'properties.outputs.acrName.value' --output tsv)
+          # Get first ACR in resource group (fallback method)
+          acr_info=$(az acr list --resource-group ${{ env.RG_NAME }} --query '[0]' --output json)
+          acr_server=$(echo $acr_info | jq -r '.loginServer')
+          acr_name=$(echo $acr_info | jq -r '.name')
           echo "acr_server=$acr_server" >> $GITHUB_OUTPUT
           echo "acr_name=$acr_name" >> $GITHUB_OUTPUT
           echo "ACR Server: $acr_server"
