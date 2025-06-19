@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEnder AI - Главная</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 50px 20px;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+        }
+        .subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 50px;
+            opacity: 0.9;
+        }
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        .link-card {
+            background: rgba(255,255,255,0.15);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+        .link-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255,255,255,0.25);
+        }
+        .link-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+        .link-card p {
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+        .status-bar {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            margin-top: 40px;
+        }
+        .status-item {
+            display: inline-block;
+            margin: 10px 20px;
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        .status-ok { background: rgba(16, 185, 129, 0.3); }
+        .status-error { background: rgba(239, 68, 68, 0.3); }
+        .status-pending { background: rgba(251, 191, 36, 0.3); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 TEnder AI</h1>
+        <p class="subtitle">
+            Полнофункциональная платформа для анализа тендеров<br>
+            с использованием Azure AI и машинного обучения
+        </p>
+
+        <div class="links-grid">
+            <div class="link-card">
+                <h3>🚀 Быстрый тест</h3>
+                <p>Простая проверка статуса всех сервисов и быстрые ссылки на документацию</p>
+                <a href="frontend/simple-test.html" class="btn">Открыть</a>
+            </div>
+
+            <div class="link-card">
+                <h3>🧪 Полное тестирование</h3>
+                <p>Комплексное тестирование всех функций: OCR, AI анализ, база данных, хранилище</p>
+                <a href="frontend/test-full-features.html" class="btn">Открыть</a>
+            </div>
+
+            <div class="link-card">
+                <h3>📚 API Документация</h3>
+                <p>Swagger UI с полной документацией всех endpoints и возможностей API</p>
+                <a href="https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io/docs" class="btn" target="_blank">Открыть</a>
+            </div>
+
+            <div class="link-card">
+                <h3>⚙️ Статус API</h3>
+                <p>Прямая ссылка на статус API и информацию о подключенных сервисах</p>
+                <a href="https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io/" class="btn" target="_blank">Открыть</a>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <h3>📊 Статус системы</h3>
+            <div class="status-item" id="api-status">API: Проверка...</div>
+            <div class="status-item" id="db-status">База данных: Проверка...</div>
+            <div class="status-item" id="storage-status">Хранилище: Проверка...</div>
+            <div class="status-item" id="ocr-status">OCR: Проверка...</div>
+            <div class="status-item" id="ai-status">Gemini AI: Проверка...</div>
+        </div>
+
+        <div style="margin-top: 40px; font-size: 0.9rem; opacity: 0.7;">
+            <p>🔧 Локальный сервер: <span id="local-server">http://127.0.0.1:8080</span></p>
+            <p>☁️ Azure API: tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io';
+        
+        async function checkStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                
+                document.getElementById('api-status').textContent = 'API: ✅ Работает';
+                document.getElementById('api-status').className = 'status-item status-ok';
+                
+                document.getElementById('db-status').textContent = `База данных: ${data.features.database ? '✅ Подключена' : '❌ Не настроена'}`;
+                document.getElementById('db-status').className = `status-item ${data.features.database ? 'status-ok' : 'status-error'}`;
+                
+                document.getElementById('storage-status').textContent = `Хранилище: ${data.features.blob_storage ? '✅ Настроено' : '❌ Не настроено'}`;
+                document.getElementById('storage-status').className = `status-item ${data.features.blob_storage ? 'status-ok' : 'status-error'}`;
+                
+                document.getElementById('ocr-status').textContent = `OCR: ${data.features.computer_vision ? '✅ Настроен' : '❌ Не настроен'}`;
+                document.getElementById('ocr-status').className = `status-item ${data.features.computer_vision ? 'status-ok' : 'status-error'}`;
+                
+                document.getElementById('ai-status').textContent = `Gemini AI: ${data.features.gemini_ai ? '✅ Настроен' : '❌ Не настроен'}`;
+                document.getElementById('ai-status').className = `status-item ${data.features.gemini_ai ? 'status-ok' : 'status-error'}`;
+                
+            } catch (error) {
+                ['api-status', 'db-status', 'storage-status', 'ocr-status', 'ai-status'].forEach(id => {
+                    const element = document.getElementById(id);
+                    element.textContent = element.textContent.replace('Проверка...', '❌ Недоступен');
+                    element.className = 'status-item status-error';
+                });
+            }
+        }
+        
+        checkStatus();
+        setInterval(checkStatus, 30000); // Обновляем каждые 30 секунд
+    </script>
+</body>
+</html> 

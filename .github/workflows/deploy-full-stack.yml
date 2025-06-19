@@ -3,6 +3,10 @@ name: Deploy Full Azure Stack
 on:
   push:
     branches: [main]
+    paths:
+      - "TRIGGER_FULL_DEPLOY.md"
+      - "backend/**"
+      - "infra/**"
   workflow_dispatch:
     inputs:
       deploy_infrastructure:
@@ -14,7 +18,7 @@ on:
 jobs:
   deploy-infrastructure:
     runs-on: ubuntu-latest
-    if: github.event.inputs.deploy_infrastructure == 'true' || github.event_name == 'workflow_dispatch'
+    if: github.event.inputs.deploy_infrastructure == 'true' || github.event_name == 'push'
     outputs:
       acr_name: ${{ steps.deploy.outputs.acrName }}
       acr_login_server: ${{ steps.deploy.outputs.acrLoginServer }}
