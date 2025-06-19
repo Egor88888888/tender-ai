@@ -10,51 +10,10 @@ on:
         required: false
         default: false
         type: boolean
-      db_password:
-        description: "Database password (required for new infrastructure)"
-        required: false
-        type: string
 
 jobs:
-  deploy-infrastructure:
-    if: github.event.inputs.deploy_infrastructure == 'true' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    outputs:
-      api_url: ${{ steps.deploy.outputs.apiUrl }}
-      frontend_url: ${{ steps.deploy.outputs.staticWebAppUrl }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Login to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Deploy Full Azure Infrastructure
-        id: deploy
-        uses: azure/arm-deploy@v1
-        with:
-          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          resourceGroupName: tender-rg
-          template: ./infra/azuredeploy-full.bicep
-          parameters: >
-            project=tender
-            dbAdminPassword=${{ github.event.inputs.db_password || secrets.DB_ADMIN_PASSWORD }}
-            apiImage=mcr.microsoft.com/azuredocs/containerapps-helloworld:latest
-          failOnStdErr: false
-
-      - name: Set Gemini API Key in Key Vault
-        run: |
-          KEYVAULT_NAME=$(az keyvault list --resource-group tender-rg --query "[0].name" -o tsv)
-          if [ ! -z "${{ secrets.GEMINI_API_KEY }}" ]; then
-            az keyvault secret set --vault-name $KEYVAULT_NAME --name "gemini-api-key" --value "${{ secrets.GEMINI_API_KEY }}"
-          fi
-
   build-and-deploy-api:
     runs-on: ubuntu-latest
-    needs: [deploy-infrastructure]
-    if: always() && !failure()
 
     steps:
       - uses: actions/checkout@v4
@@ -99,44 +58,9 @@ jobs:
             --resource-group tender-rg \
             --image ${{ steps.acr-info.outputs.acr_login_server }}/tender-api:${{ github.sha }}
 
-  build-and-deploy-frontend:
-    runs-on: ubuntu-latest
-    needs: [build-and-deploy-api]
-    if: always() && !failure()
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-          cache: "npm"
-          cache-dependency-path: frontend/package.json
-
-      - name: Install Dependencies
-        run: |
-          cd frontend
-          npm ci
-
-      - name: Build Frontend
-        run: |
-          cd frontend
-          npm run build
-
-      - name: Deploy to Azure Static Web Apps
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: "upload"
-          app_location: "/frontend"
-          output_location: "dist"
-
   test-deployment:
     runs-on: ubuntu-latest
-    needs: [build-and-deploy-api, build-and-deploy-frontend]
-    if: always() && !failure()
+    needs: [build-and-deploy-api]
 
     steps:
       - name: Test API Health
@@ -155,11 +79,10 @@ jobs:
           done
 
           echo "Testing full API status..."
-          curl -s "$API_URL/" | jq .
+          curl -s "$API_URL/"
 
       - name: Summary
         run: |
           echo "🎉 Deployment completed successfully!"
           echo "📊 API URL: https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io"
-          echo "🌐 Frontend URL: Will be provided by Static Web Apps"
           echo "📚 API Docs: https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io/docs"
