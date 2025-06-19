@@ -64,4 +64,5 @@ jobs:
 
       - name: Update Container App
         run: |
-          az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep --parameters apiImage=${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}
+          echo "Updating Container App with image: ${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}"
+          az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep --parameters apiImage="${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}"
