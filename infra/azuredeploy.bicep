@@ -66,6 +66,9 @@ resource cae 'Microsoft.App/managedEnvironments@2023-05-01' = {
 resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: '${project}-api'
   location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     managedEnvironmentId: cae.id
     configuration: {
@@ -108,6 +111,17 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
     }
   }
 } 
+
+// Role assignment: Container App managed identity can pull from ACR
+resource acrPullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acr.id, apiApp.id, 'AcrPull')
+  scope: acr
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d') // AcrPull role
+    principalId: apiApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
 
 // Outputs
 output acrLoginServer string = acr.properties.loginServer
