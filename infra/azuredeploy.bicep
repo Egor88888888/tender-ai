@@ -6,7 +6,7 @@ param location string = resourceGroup().location
 param project string = 'tender'
 
 @description('Container image tag for API')
-param apiImage string
+param apiImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 var acrName = '${project}acr${uniqueString(resourceGroup().id)}'
 var saName = uniqueString('${project}sa')
 var kvName = '${project}-kv-${uniqueString(resourceGroup().id)}'
@@ -55,11 +55,11 @@ resource kv 'Microsoft.KeyVault/vaults@2023-02-01' = {
 
 // Example secret: Gemini API Key (to be set post-deploy)
 resource geminiSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = {
-  name: '${kv.name}/GEMINI-API-KEY'
+  parent: kv
+  name: 'GEMINI-API-KEY'
   properties: {
     value: 'TO-BE-SET'
   }
-  dependsOn: [kv]
 }
 
 // Container Apps environment
@@ -114,7 +114,6 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
       }
     }
   }
-  dependsOn: [cae, acr]
 } 
 
 // Outputs
