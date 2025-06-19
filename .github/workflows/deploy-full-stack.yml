@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       deploy_infrastructure:
-        description: "Deploy new infrastructure"
+        description: "Deploy new infrastructure (PostgreSQL, Cognitive Services, etc.)"
         required: false
-        default: false
+        default: true
         type: boolean
 
 jobs:
@@ -24,9 +24,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Login to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+        run: |
+          az login --service-principal \
+            --username ${{ secrets.AZURE_CLIENT_ID }} \
+            --password ${{ secrets.AZURE_CLIENT_SECRET }} \
+            --tenant ${{ secrets.AZURE_TENANT_ID }}
 
       - name: Deploy Azure Infrastructure
         id: deploy
@@ -38,7 +40,7 @@ jobs:
           DEPLOYMENT_OUTPUT=$(az deployment group create \
             --resource-group tender-rg \
             --template-file infra/azuredeploy-full.bicep \
-            --parameters dbAdminPassword="${{ secrets.DB_ADMIN_PASSWORD }}" \
+            --parameters dbAdminPassword="TenderAI_2024_SecurePass!" \
             --query 'properties.outputs' \
             -o json)
 
@@ -57,7 +59,13 @@ jobs:
       - name: Setup Gemini API Key in Key Vault
         run: |
           KV_NAME=$(az keyvault list --resource-group tender-rg --query "[0].name" -o tsv)
-          az keyvault secret set --vault-name $KV_NAME --name "gemini-api-key" --value "${{ secrets.GEMINI_API_KEY }}"
+          if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
+            az keyvault secret set --vault-name $KV_NAME --name "gemini-api-key" --value "${{ secrets.GEMINI_API_KEY }}"
+            echo "✅ Gemini API Key stored successfully"
+          else
+            echo "⚠️ GEMINI_API_KEY secret not set. You'll need to add it manually."
+            echo "Run: az keyvault secret set --vault-name $KV_NAME --name \"gemini-api-key\" --value \"YOUR_API_KEY\""
+          fi
 
   build-and-deploy-api:
     runs-on: ubuntu-latest
@@ -68,9 +76,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Login to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+        run: |
+          az login --service-principal \
+            --username ${{ secrets.AZURE_CLIENT_ID }} \
+            --password ${{ secrets.AZURE_CLIENT_SECRET }} \
+            --tenant ${{ secrets.AZURE_TENANT_ID }}
 
       - name: Get ACR Info
         id: acr-info

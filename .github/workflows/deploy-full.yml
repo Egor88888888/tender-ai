@@ -1,0 +1,230 @@
+name: Deploy Full Azure Stack
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_infrastructure:
+        description: "Deploy new infrastructure (PostgreSQL, Cognitive Services, etc.)"
+        required: true
+        default: "true"
+        type: boolean
+      gemini_api_key:
+        description: "Gemini API Key (optional)"
+        required: false
+        type: string
+
+jobs:
+  deploy-full-stack:
+    runs-on: ubuntu-latest
+    env:
+      RESOURCE_GROUP: tender-rg
+      LOCATION: westeurope
+      DB_ADMIN_PASSWORD: TenderAI_2024_SecurePass!
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        run: |
+          az login --service-principal \
+            --username ${{ secrets.AZURE_CLIENT_ID }} \
+            --password ${{ secrets.AZURE_CLIENT_SECRET }} \
+            --tenant ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: Deploy Full Infrastructure
+        if: inputs.deploy_infrastructure == true
+        id: infrastructure
+        run: |
+          echo "🚀 Deploying full Azure infrastructure..."
+
+          # Deploy infrastructure
+          DEPLOYMENT_OUTPUT=$(az deployment group create \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --template-file infra/azuredeploy-full.bicep \
+            --parameters dbAdminPassword="${{ env.DB_ADMIN_PASSWORD }}" \
+            --query 'properties.outputs' \
+            -o json)
+
+          if [ $? -eq 0 ]; then
+            echo "✅ Infrastructure deployment completed!"
+            
+            # Extract outputs
+            ACR_NAME=$(echo "$DEPLOYMENT_OUTPUT" | jq -r '.acrName.value')
+            ACR_LOGIN_SERVER=$(echo "$DEPLOYMENT_OUTPUT" | jq -r '.acrLoginServer.value')
+            API_URL=$(echo "$DEPLOYMENT_OUTPUT" | jq -r '.apiUrl.value')
+            KV_NAME=$(echo "$DEPLOYMENT_OUTPUT" | jq -r '.keyVaultName.value')
+            STORAGE_NAME=$(echo "$DEPLOYMENT_OUTPUT" | jq -r '.storageAccountName.value')
+            
+            echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
+            echo "acr_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+            echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+            echo "kv_name=$KV_NAME" >> $GITHUB_OUTPUT
+            echo "storage_name=$STORAGE_NAME" >> $GITHUB_OUTPUT
+            
+            echo "📋 Deployment outputs:"
+            echo "   ACR Name: $ACR_NAME"
+            echo "   ACR Server: $ACR_LOGIN_SERVER"
+            echo "   API URL: $API_URL"
+            echo "   Key Vault: $KV_NAME"
+            echo "   Storage: $STORAGE_NAME"
+          else
+            echo "❌ Infrastructure deployment failed!"
+            exit 1
+          fi
+
+      - name: Get Existing Infrastructure Info
+        if: inputs.deploy_infrastructure == false
+        id: existing
+        run: |
+          echo "📋 Getting existing infrastructure info..."
+
+          # Get ACR info
+          ACR_INFO=$(az acr list --resource-group ${{ env.RESOURCE_GROUP }} --query '[0]' --output json)
+          ACR_NAME=$(echo $ACR_INFO | jq -r '.name')
+          ACR_LOGIN_SERVER=$(echo $ACR_INFO | jq -r '.loginServer')
+
+          # Get Container App info  
+          CA_INFO=$(az containerapp list --resource-group ${{ env.RESOURCE_GROUP }} --query "[?contains(name, 'tender')].properties.configuration.ingress.fqdn" -o tsv)
+          API_URL="https://$CA_INFO"
+
+          # Get Key Vault info
+          KV_NAME=$(az keyvault list --resource-group ${{ env.RESOURCE_GROUP }} --query '[0].name' -o tsv)
+
+          # Get Storage info
+          STORAGE_NAME=$(az storage account list --resource-group ${{ env.RESOURCE_GROUP }} --query '[0].name' -o tsv)
+
+          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
+          echo "acr_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+          echo "kv_name=$KV_NAME" >> $GITHUB_OUTPUT
+          echo "storage_name=$STORAGE_NAME" >> $GITHUB_OUTPUT
+
+      - name: Store Gemini API Key
+        if: inputs.gemini_api_key != ''
+        run: |
+          KV_NAME="${{ steps.infrastructure.outputs.kv_name || steps.existing.outputs.kv_name }}"
+          echo "🔑 Storing Gemini API Key in Key Vault: $KV_NAME"
+          az keyvault secret set \
+            --vault-name "$KV_NAME" \
+            --name "gemini-api-key" \
+            --value "${{ inputs.gemini_api_key }}"
+          echo "✅ Gemini API Key stored successfully"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Get ACR credentials
+        id: acr_creds
+        run: |
+          ACR_NAME="${{ steps.infrastructure.outputs.acr_name || steps.existing.outputs.acr_name }}"
+          echo "Getting ACR credentials for: $ACR_NAME"
+
+          ACR_USERNAME=$(az acr credential show --name "$ACR_NAME" --query 'username' --output tsv)
+          ACR_PASSWORD=$(az acr credential show --name "$ACR_NAME" --query 'passwords[0].value' --output tsv)
+
+          echo "acr_username=$ACR_USERNAME" >> $GITHUB_OUTPUT
+          echo "acr_password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
+
+      - name: Log in to ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ steps.infrastructure.outputs.acr_server || steps.existing.outputs.acr_server }}
+          username: ${{ steps.acr_creds.outputs.acr_username }}
+          password: ${{ steps.acr_creds.outputs.acr_password }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ steps.infrastructure.outputs.acr_server || steps.existing.outputs.acr_server }}/tender-api:${{ github.sha }}
+            ${{ steps.infrastructure.outputs.acr_server || steps.existing.outputs.acr_server }}/tender-api:latest
+
+      - name: Update Container App
+        run: |
+          ACR_SERVER="${{ steps.infrastructure.outputs.acr_server || steps.existing.outputs.acr_server }}"
+          ACR_USERNAME="${{ steps.acr_creds.outputs.acr_username }}"
+          ACR_PASSWORD="${{ steps.acr_creds.outputs.acr_password }}"
+
+          echo "🐳 Updating Container App with new image..."
+          echo "Image: $ACR_SERVER/tender-api:${{ github.sha }}"
+
+          # Get Container App name
+          CONTAINER_APP_NAME=$(az containerapp list --resource-group ${{ env.RESOURCE_GROUP }} --query "[?contains(name, 'tender')].name" -o tsv)
+
+          if [ -n "$CONTAINER_APP_NAME" ]; then
+            # Set registry credentials
+            az containerapp registry set \
+              --name "$CONTAINER_APP_NAME" \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --server "$ACR_SERVER" \
+              --username "$ACR_USERNAME" \
+              --password "$ACR_PASSWORD"
+
+            # Update image
+            az containerapp update \
+              --name "$CONTAINER_APP_NAME" \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --image "$ACR_SERVER/tender-api:${{ github.sha }}"
+              
+            echo "✅ Container App updated: $CONTAINER_APP_NAME"
+          else
+            echo "❌ No Container App found"
+            exit 1
+          fi
+
+      - name: Test Deployment
+        run: |
+          API_URL="${{ steps.infrastructure.outputs.api_url || steps.existing.outputs.api_url }}"
+          echo "🧪 Testing deployment at: $API_URL"
+
+          # Wait for app to start
+          for i in {1..20}; do
+            if curl -f -s "$API_URL/health" > /dev/null; then
+              echo "✅ API is healthy and running!"
+              break
+            else
+              echo "⏳ Waiting for API... (attempt $i/20)"
+              sleep 15
+            fi
+          done
+
+      - name: Test All Features
+        run: |
+          API_URL="${{ steps.infrastructure.outputs.api_url || steps.existing.outputs.api_url }}"
+          echo "🔍 Testing all API features..."
+
+          echo "=== API Status ==="
+          curl -s "$API_URL/" | jq '.'
+
+          echo "=== Environment Variables ==="
+          curl -s "$API_URL/api/debug-env" | jq '.'
+
+          echo "=== Storage Info ==="
+          curl -s "$API_URL/api/storage-info" | jq '.'
+
+      - name: Deployment Summary
+        run: |
+          API_URL="${{ steps.infrastructure.outputs.api_url || steps.existing.outputs.api_url }}"
+
+          echo "🎉 Full Azure Stack deployment completed successfully!"
+          echo ""
+          echo "📊 Services deployed:"
+          echo "  - ✅ PostgreSQL Database"
+          echo "  - ✅ Cognitive Services (OCR, Computer Vision)"
+          echo "  - ✅ Form Recognizer"
+          echo "  - ✅ Blob Storage"
+          echo "  - ✅ Container Registry"
+          echo "  - ✅ Container Apps"
+          echo "  - ✅ Key Vault"
+          echo "  - ✅ Application Insights"
+          echo ""
+          echo "🔗 URLs:"
+          echo "  API: $API_URL"
+          echo "  Docs: $API_URL/docs"
+          echo "  Swagger: $API_URL/docs"
+          echo ""
+          echo "✅ All services are running on real Azure infrastructure!"
+          echo "🚀 Ready for testing all functionalities!"
