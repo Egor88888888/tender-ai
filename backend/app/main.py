@@ -27,7 +27,12 @@ def create_app() -> FastAPI:
     @app.get("/")
     async def root():  # noqa: D401
         """Health-check endpoint."""
-        return {"status": "ok"}
+        return {"status": "ok", "message": "Tender AI is running"}
+
+    @app.get("/health")
+    async def health():  # noqa: D401
+        """Health-check endpoint for Azure Container Apps."""
+        return {"status": "healthy", "service": "tender-ai"}
 
     return app
 
