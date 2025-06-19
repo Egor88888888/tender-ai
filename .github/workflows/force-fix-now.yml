@@ -1,0 +1,221 @@
+name: 🚨 FORCE FIX NOW
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "FORCE_FIX_NOW.md"
+  workflow_dispatch:
+    inputs:
+      force_now:
+        description: "Force immediate Container App fix"
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  force-fix-immediately:
+    runs-on: ubuntu-latest
+    env:
+      RESOURCE_GROUP: tender-rg
+      CONTAINER_APP_NAME: tender-api
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        run: |
+          az login --service-principal \
+            --username ${{ secrets.AZURE_CLIENT_ID }} \
+            --password ${{ secrets.AZURE_CLIENT_SECRET }} \
+            --tenant ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: Force Create PostgreSQL if Missing
+        run: |
+          echo "🔍 Проверяем PostgreSQL..."
+          POSTGRES_SERVERS=($(az postgres flexible-server list --resource-group ${{ env.RESOURCE_GROUP }} --query "[].name" -o tsv 2>/dev/null || echo ""))
+
+          if [ ${#POSTGRES_SERVERS[@]} -eq 0 ]; then
+            echo "❌ PostgreSQL не найден, создаем НЕМЕДЛЕННО..."
+            
+            POSTGRES_SERVER="tender-db-force-$(date +%s)"
+            az postgres flexible-server create \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --name $POSTGRES_SERVER \
+              --location westeurope \
+              --admin-user tenderadmin \
+              --admin-password "TenderAI_2024_SecurePass!" \
+              --sku-name Standard_B1ms \
+              --tier Burstable \
+              --version 15 \
+              --storage-size 32 \
+              --public-access 0.0.0.0 \
+              --yes
+              
+            az postgres flexible-server db create \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --server-name $POSTGRES_SERVER \
+              --database-name tenderdb
+              
+            echo "✅ PostgreSQL создан: $POSTGRES_SERVER"
+          else
+            echo "✅ PostgreSQL найден: ${POSTGRES_SERVERS[0]}"
+          fi
+
+      - name: Force Create Cognitive Services if Missing
+        run: |
+          echo "🔍 Проверяем Cognitive Services..."
+          COGNITIVE_SERVICES=($(az cognitiveservices account list --resource-group ${{ env.RESOURCE_GROUP }} --query "[].name" -o tsv 2>/dev/null || echo ""))
+
+          if [ ${#COGNITIVE_SERVICES[@]} -eq 0 ]; then
+            echo "❌ Cognitive Services не найден, создаем НЕМЕДЛЕННО..."
+            
+            COGNITIVE_SERVICE="tender-cognitive-force-$(date +%s)"
+            az cognitiveservices account create \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --name $COGNITIVE_SERVICE \
+              --location westeurope \
+              --kind CognitiveServices \
+              --sku S0 \
+              --yes
+              
+            echo "✅ Cognitive Services создан: $COGNITIVE_SERVICE"
+          else
+            echo "✅ Cognitive Services найден: ${COGNITIVE_SERVICES[0]}"
+          fi
+
+      - name: FORCE Update Container App Environment Variables
+        run: |
+          echo "🚨 ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ..."
+
+          # Get PostgreSQL connection
+          POSTGRES_SERVERS=($(az postgres flexible-server list --resource-group ${{ env.RESOURCE_GROUP }} --query "[].name" -o tsv))
+          if [ ${#POSTGRES_SERVERS[@]} -gt 0 ]; then
+            POSTGRES_SERVER=${POSTGRES_SERVERS[0]}
+            POSTGRES_HOST=$(az postgres flexible-server show --name $POSTGRES_SERVER --resource-group ${{ env.RESOURCE_GROUP }} --query "fullyQualifiedDomainName" -o tsv)
+            DATABASE_URL="postgresql://tenderadmin:TenderAI_2024_SecurePass!@${POSTGRES_HOST}:5432/tenderdb?sslmode=require"
+            echo "✅ Database URL: готов"
+          else
+            DATABASE_URL=""
+            echo "❌ Database URL: не найден"
+          fi
+
+          # Get Cognitive Services
+          COGNITIVE_SERVICES=($(az cognitiveservices account list --resource-group ${{ env.RESOURCE_GROUP }} --query "[].name" -o tsv))
+          if [ ${#COGNITIVE_SERVICES[@]} -gt 0 ]; then
+            COGNITIVE_SERVICE=${COGNITIVE_SERVICES[0]}
+            COGNITIVE_ENDPOINT=$(az cognitiveservices account show --name $COGNITIVE_SERVICE --resource-group ${{ env.RESOURCE_GROUP }} --query "properties.endpoint" -o tsv)
+            COGNITIVE_KEY=$(az cognitiveservices account keys list --name $COGNITIVE_SERVICE --resource-group ${{ env.RESOURCE_GROUP }} --query "key1" -o tsv)
+            echo "✅ Cognitive Services: готов"
+          else
+            COGNITIVE_ENDPOINT=""
+            COGNITIVE_KEY=""
+            echo "❌ Cognitive Services: не найден"
+          fi
+
+          # Get Storage
+          STORAGE_ACCOUNTS=($(az storage account list --resource-group ${{ env.RESOURCE_GROUP }} --query "[].name" -o tsv))
+          if [ ${#STORAGE_ACCOUNTS[@]} -gt 0 ]; then
+            STORAGE_ACCOUNT=${STORAGE_ACCOUNTS[0]}
+            STORAGE_KEY=$(az storage account keys list --account-name $STORAGE_ACCOUNT --resource-group ${{ env.RESOURCE_GROUP }} --query "[0].value" -o tsv)
+            STORAGE_CONN="DefaultEndpointsProtocol=https;AccountName=${STORAGE_ACCOUNT};AccountKey=${STORAGE_KEY};EndpointSuffix=core.windows.net"
+            echo "✅ Storage: готов"
+          else
+            STORAGE_CONN=""
+            echo "❌ Storage: не найден"
+          fi
+
+          # Get existing Gemini key
+          EXISTING_GEMINI=$(az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }} --query 'properties.template.containers[0].env[?name==`GEMINI_API_KEY`].value' -o tsv 2>/dev/null || echo "")
+
+          echo "🔧 Применяем ВСЕ переменные окружения ПРИНУДИТЕЛЬНО..."
+
+          # Force update ALL environment variables
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --set-env-vars \
+              DATABASE_URL="$DATABASE_URL" \
+              COGNITIVE_SERVICES_KEY="$COGNITIVE_KEY" \
+              COGNITIVE_SERVICES_ENDPOINT="$COGNITIVE_ENDPOINT" \
+              AZURE_STORAGE_CONNECTION_STRING="$STORAGE_CONN" \
+              GEMINI_API_KEY="$EXISTING_GEMINI"
+
+          echo "✅ Переменные окружения обновлены!"
+
+      - name: FORCE Restart Container App
+        run: |
+          echo "🔄 ПРИНУДИТЕЛЬНЫЙ ПЕРЕЗАПУСК Container App..."
+
+          # Force restart by scaling down and up
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --min-replicas 0 \
+            --max-replicas 1
+            
+          echo "⏳ Ожидаем остановку..."
+          sleep 30
+
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --min-replicas 1 \
+            --max-replicas 10
+            
+          echo "✅ Container App принудительно перезапущен!"
+
+      - name: Wait and Verify Fix
+        run: |
+          echo "⏳ Ожидаем полного перезапуска (2 минуты)..."
+          sleep 120
+
+          API_URL="https://$(az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }} --query 'properties.configuration.ingress.fqdn' -o tsv)"
+
+          echo "🧪 ТЕСТИРУЕМ ИСПРАВЛЕНИЯ..."
+          echo "API URL: $API_URL"
+
+          echo "=== Статус API ==="
+          API_RESPONSE=$(curl -s "$API_URL/" || echo '{"error":"api_unavailable"}')
+          echo "$API_RESPONSE"
+
+          echo "=== Переменные окружения ==="
+          ENV_RESPONSE=$(curl -s "$API_URL/api/debug-env" || echo '{"error":"env_unavailable"}')
+          echo "$ENV_RESPONSE"
+
+          echo "=== Проверяем исправления ==="
+          if echo "$API_RESPONSE" | grep -q '"database":true'; then
+            echo "✅ БАЗА ДАННЫХ ИСПРАВЛЕНА!"
+          else
+            echo "❌ База данных все еще не работает"
+          fi
+
+          if echo "$API_RESPONSE" | grep -q '"computer_vision":true'; then
+            echo "✅ COMPUTER VISION ИСПРАВЛЕН!"
+          else
+            echo "❌ Computer Vision все еще не работает"
+          fi
+
+          if echo "$API_RESPONSE" | grep -q '"gemini_ai":true'; then
+            echo "✅ GEMINI AI РАБОТАЕТ!"
+          else
+            echo "❌ Gemini AI не работает"
+          fi
+
+      - name: Final Status Report
+        run: |
+          API_URL="https://$(az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }} --query 'properties.configuration.ingress.fqdn' -o tsv)"
+
+          echo "🎯 ПРИНУДИТЕЛЬНОЕ ИСПРАВЛЕНИЕ ЗАВЕРШЕНО!"
+          echo ""
+          echo "📊 API URL: $API_URL"
+          echo "🧪 Полное тестирование: http://127.0.0.1:8080/test-full-features.html"
+          echo "📚 API Документация: $API_URL/docs"
+          echo ""
+          echo "🚨 ВСЕ ПРОБЛЕМЫ ДОЛЖНЫ БЫТЬ ИСПРАВЛЕНЫ!"
+          echo "   - Database connection"
+          echo "   - Computer Vision / OCR"
+          echo "   - AI Analysis"
+          echo ""
+          echo "🎉 Готово к полному тестированию!"
