@@ -70,15 +70,7 @@ resource geminiSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = {
 resource cae 'Microsoft.App/managedEnvironments@2023-05-01' = {
   name: envName
   location: location
-  properties: {
-    appLogsConfiguration: {
-      destination: 'log-analytics'
-      logAnalyticsConfiguration: {
-        customerId: ''
-        sharedKey: ''
-      }
-    }
-  }
+  properties: {}
 }
 
 // Container App: API
@@ -95,7 +87,7 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
         }
         {
           name: 'storage-conn'
-          value: sa.properties.primaryConnectionString
+          value: 'DefaultEndpointsProtocol=https;AccountName=${sa.name};AccountKey=${sa.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
         }
       ]
       ingress: {
