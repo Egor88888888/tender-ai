@@ -1,0 +1,38 @@
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Docker login to ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build & push API image
+        run: |
+          docker build -t $REGISTRY/tender-api:$IMAGE_TAG -f backend/Dockerfile .
+          docker push $REGISTRY/tender-api:$IMAGE_TAG
+
+      - name: Deploy Bicep
+        run: |
+          az deployment group create \
+            --resource-group tender-rg \
+            --template-file infra/azuredeploy.bicep \
+            --parameters apiImage=$REGISTRY/tender-api:$IMAGE_TAG \
+                         workerImage=$REGISTRY/tender-api:$IMAGE_TAG

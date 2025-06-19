@@ -1,0 +1,56 @@
+version: "3.9"
+services:
+  api:
+    build:
+      context: ../backend
+    env_file: ./.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+      - minio
+
+  worker:
+    build:
+      context: ../backend
+    command: celery -A backend.app.tasks.celery_app worker -l info
+    env_file: ./.env
+    depends_on:
+      - api
+      - redis
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+volumes:
+  db_data:
+  minio_data:
