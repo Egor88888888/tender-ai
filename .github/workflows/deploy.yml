@@ -1,6 +1,5 @@
 name: Deploy to Azure
 
-
 on:
   push:
     branches:
@@ -20,7 +19,6 @@ jobs:
       - name: Azure Login
         run: |
           az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
-          az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Docker login to ACR
         uses: azure/docker-login@v1
