@@ -27,7 +27,7 @@ jobs:
         id: deploy
         run: |
           echo "Deploying infrastructure..."
-          az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep
+          az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep --mode Incremental
           echo "Getting ACR info..."
           # Get first ACR in resource group (fallback method)
           acr_info=$(az acr list --resource-group ${{ env.RG_NAME }} --query '[0]' --output json)
@@ -67,4 +67,4 @@ jobs:
       - name: Update Container App
         run: |
           echo "Updating Container App with image: ${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}"
-          az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep --parameters apiImage="${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}"
+          az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/update-app.bicep --parameters apiImage="${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}"
