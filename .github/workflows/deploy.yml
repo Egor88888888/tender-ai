@@ -72,21 +72,30 @@ jobs:
             ${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}
             ${{ steps.deploy.outputs.acr_server }}/tender-api:latest
 
+      - name: Setup Container App ACR Access
+        run: |
+          echo "Setting up Container App access to ACR..."
+
+          # Enable system-assigned identity for Container App
+          echo "Enabling managed identity..."
+          identity_output=$(az containerapp identity assign --name tender-api --resource-group ${{ env.RG_NAME }} --system-assigned --output json)
+          principal_id=$(echo $identity_output | jq -r '.principalId')
+          echo "Principal ID: $principal_id"
+
+          # Grant AcrPull permission to the managed identity
+          echo "Granting ACR pull permissions..."
+          acr_id=$(az acr show --name ${{ steps.deploy.outputs.acr_name }} --resource-group ${{ env.RG_NAME }} --query id --output tsv)
+          az role assignment create \
+            --assignee $principal_id \
+            --role AcrPull \
+            --scope $acr_id
+
       - name: Update Container App
         run: |
           echo "Updating Container App with image: ${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}"
 
-          # Check if Container App exists
-          if az containerapp show --name tender-api --resource-group ${{ env.RG_NAME }} >/dev/null 2>&1; then
-            echo "Container App exists, updating image..."
-            az containerapp update \
-              --name tender-api \
-              --resource-group ${{ env.RG_NAME }} \
-              --image "${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}"
-          else
-            echo "Container App does not exist, creating with deployment..."
-            az deployment group create \
-              --resource-group ${{ env.RG_NAME }} \
-              --template-file infra/azuredeploy.bicep \
-              --parameters apiImage="${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}"
-          fi
+          # Update Container App image
+          az containerapp update \
+            --name tender-api \
+            --resource-group ${{ env.RG_NAME }} \
+            --image "${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}"
