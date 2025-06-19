@@ -41,4 +41,4 @@ jobs:
 
       - name: Deploy using Bicep template
         run: |
-          az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep --parameters apiImage=tenderacr.azurecr.io/tender-api:${{ github.sha }} workerImage=tenderacr.azurecr.io/tender-api:${{ github.sha }}
+          az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep --parameters apiImage=tenderacr.azurecr.io/tender-api:${{ github.sha }}

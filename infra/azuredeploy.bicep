@@ -7,17 +7,12 @@ param project string = 'tender'
 
 @description('Container image tag for API')
 param apiImage string
-@description('Container image tag for worker')
-param workerImage string
-
 var acrName = '${project}acr'
 var saName = uniqueString('${project}sa')
 var kvName = '${project}-kv'
 var envName = '${project}-ca-env'
-var postgresName = '${project}-pg'
-var redisName = '${project}-redis'
 
-resource acr 'Microsoft.ContainerRegistry/registries@2022-12-01-preview' = {
+resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: acrName
   location: location
   sku: {
@@ -54,6 +49,7 @@ resource kv 'Microsoft.KeyVault/vaults@2023-02-01' = {
     }
     tenantId: subscription().tenantId
     enableSoftDelete: true
+    accessPolicies: []
   }
 }
 
