@@ -6,7 +6,7 @@ on:
       deploy_infrastructure:
         description: "Deploy new infrastructure (PostgreSQL, Cognitive Services, etc.)"
         required: true
-        default: "true"
+        default: true
         type: boolean
       gemini_api_key:
         description: "Gemini API Key (optional)"
