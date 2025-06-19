@@ -1,6 +1,10 @@
 name: Fix Container App Configuration
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "URGENT_FIX_TRIGGER.md"
   workflow_dispatch:
     inputs:
       force_fix:
