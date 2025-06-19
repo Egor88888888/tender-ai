@@ -26,9 +26,10 @@ jobs:
       - name: Deploy Infrastructure
         id: deploy
         run: |
-          deployment_output=$(az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep --output json)
-          echo "deployment_output=$deployment_output" >> $GITHUB_OUTPUT
-          acr_server=$(echo $deployment_output | jq -r '.properties.outputs.acrLoginServer.value')
+          echo "Deploying infrastructure..."
+          az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep
+          echo "Getting ACR login server..."
+          acr_server=$(az deployment group show --resource-group ${{ env.RG_NAME }} --name azuredeploy --query 'properties.outputs.acrLoginServer.value' --output tsv)
           echo "acr_server=$acr_server" >> $GITHUB_OUTPUT
           echo "ACR Server: $acr_server"
 

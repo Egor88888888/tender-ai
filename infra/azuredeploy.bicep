@@ -72,7 +72,7 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
       secrets: [
         {
           name: 'gemini-api-key'
-          value: 'TO-BE-SET-MANUALLY'
+          value: 'placeholder-value'
         }
         {
           name: 'storage-conn'
