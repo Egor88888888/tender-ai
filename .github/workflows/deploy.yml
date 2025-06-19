@@ -23,13 +23,6 @@ jobs:
         run: |
           az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
 
-      - name: Log in to ACR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ steps.tags.outputs.registry }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-
       - name: Set image tags
         id: tags
         run: |
@@ -48,6 +41,13 @@ jobs:
           echo "latest-tag=${REGISTRY}/tender-api:latest" >> $GITHUB_OUTPUT
           echo "Registry used: ${REGISTRY}"
           echo "Image: tender-api:${IMAGE_TAG}"
+
+      - name: Log in to ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ steps.tags.outputs.registry }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v5
