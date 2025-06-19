@@ -28,17 +28,30 @@ jobs:
         run: |
           echo "Deploying infrastructure..."
           az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep
-          echo "Getting ACR login server..."
+          echo "Getting ACR info..."
           acr_server=$(az deployment group show --resource-group ${{ env.RG_NAME }} --name azuredeploy --query 'properties.outputs.acrLoginServer.value' --output tsv)
+          acr_name=$(az deployment group show --resource-group ${{ env.RG_NAME }} --name azuredeploy --query 'properties.outputs.acrName.value' --output tsv)
           echo "acr_server=$acr_server" >> $GITHUB_OUTPUT
+          echo "acr_name=$acr_name" >> $GITHUB_OUTPUT
           echo "ACR Server: $acr_server"
+          echo "ACR Name: $acr_name"
+
+      - name: Get ACR credentials
+        id: acr_creds
+        run: |
+          echo "Getting ACR admin credentials..."
+          acr_username=$(az acr credential show --name ${{ steps.deploy.outputs.acr_name }} --query 'username' --output tsv)
+          acr_password=$(az acr credential show --name ${{ steps.deploy.outputs.acr_name }} --query 'passwords[0].value' --output tsv)
+          echo "acr_username=$acr_username" >> $GITHUB_OUTPUT
+          echo "acr_password=$acr_password" >> $GITHUB_OUTPUT
+          echo "Username: $acr_username"
 
       - name: Log in to ACR
         uses: docker/login-action@v3
         with:
           registry: ${{ steps.deploy.outputs.acr_server }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
+          username: ${{ steps.acr_creds.outputs.acr_username }}
+          password: ${{ steps.acr_creds.outputs.acr_password }}
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v5
