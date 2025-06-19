@@ -23,13 +23,21 @@ jobs:
         run: |
           az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
 
-      - name: Deploy Infrastructure
+      - name: Check and Deploy Infrastructure
         id: deploy
         run: |
-          echo "Deploying infrastructure..."
-          az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep --mode Incremental
+          echo "Checking existing infrastructure..."
+          # Check if ACR already exists
+          acr_count=$(az acr list --resource-group ${{ env.RG_NAME }} --query 'length(@)')
+          if [ "$acr_count" -eq "0" ]; then
+            echo "No ACR found, deploying infrastructure..."
+            az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep --mode Incremental
+          else
+            echo "Infrastructure already exists, skipping deployment"
+          fi
+
           echo "Getting ACR info..."
-          # Get first ACR in resource group (fallback method)
+          # Get first ACR in resource group
           acr_info=$(az acr list --resource-group ${{ env.RG_NAME }} --query '[0]' --output json)
           acr_server=$(echo $acr_info | jq -r '.loginServer')
           acr_name=$(echo $acr_info | jq -r '.name')
