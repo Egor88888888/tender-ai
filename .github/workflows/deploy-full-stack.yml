@@ -12,8 +12,57 @@ on:
         type: boolean
 
 jobs:
+  deploy-infrastructure:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.deploy_infrastructure == 'true' || github.event_name == 'workflow_dispatch'
+    outputs:
+      acr_name: ${{ steps.deploy.outputs.acrName }}
+      acr_login_server: ${{ steps.deploy.outputs.acrLoginServer }}
+      api_url: ${{ steps.deploy.outputs.apiUrl }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy Azure Infrastructure
+        id: deploy
+        run: |
+          # Создаем ресурс группу если не существует
+          az group create --name tender-rg --location westeurope
+
+          # Развертываем полную инфраструктуру
+          DEPLOYMENT_OUTPUT=$(az deployment group create \
+            --resource-group tender-rg \
+            --template-file infra/azuredeploy-full.bicep \
+            --parameters dbAdminPassword="${{ secrets.DB_ADMIN_PASSWORD }}" \
+            --query 'properties.outputs' \
+            -o json)
+
+          echo "Infrastructure deployment completed"
+          echo "$DEPLOYMENT_OUTPUT"
+
+          # Извлекаем outputs
+          ACR_NAME=$(echo "$DEPLOYMENT_OUTPUT" | jq -r '.acrName.value')
+          ACR_LOGIN_SERVER=$(echo "$DEPLOYMENT_OUTPUT" | jq -r '.acrLoginServer.value')
+          API_URL=$(echo "$DEPLOYMENT_OUTPUT" | jq -r '.apiUrl.value')
+
+          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
+          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+
+      - name: Setup Gemini API Key in Key Vault
+        run: |
+          KV_NAME=$(az keyvault list --resource-group tender-rg --query "[0].name" -o tsv)
+          az keyvault secret set --vault-name $KV_NAME --name "gemini-api-key" --value "${{ secrets.GEMINI_API_KEY }}"
+
   build-and-deploy-api:
     runs-on: ubuntu-latest
+    needs: [deploy-infrastructure]
+    if: always()
 
     steps:
       - uses: actions/checkout@v4
@@ -26,8 +75,13 @@ jobs:
       - name: Get ACR Info
         id: acr-info
         run: |
-          ACR_NAME=$(az acr list --resource-group tender-rg --query "[0].name" -o tsv)
-          ACR_LOGIN_SERVER=$(az acr show --name $ACR_NAME --resource-group tender-rg --query "loginServer" -o tsv)
+          if [ "${{ needs.deploy-infrastructure.result }}" == "success" ]; then
+            ACR_NAME="${{ needs.deploy-infrastructure.outputs.acr_name }}"
+            ACR_LOGIN_SERVER="${{ needs.deploy-infrastructure.outputs.acr_login_server }}"
+          else
+            ACR_NAME=$(az acr list --resource-group tender-rg --query "[0].name" -o tsv)
+            ACR_LOGIN_SERVER=$(az acr show --name $ACR_NAME --resource-group tender-rg --query "loginServer" -o tsv)
+          fi
           echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
           echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
 
@@ -51,23 +105,38 @@ jobs:
           docker push ${{ steps.acr-info.outputs.acr_login_server }}/tender-api:${{ github.sha }}
           docker push ${{ steps.acr-info.outputs.acr_login_server }}/tender-api:latest
 
-      - name: Update Container App
+      - name: Update Container App with New Image
         run: |
-          az containerapp update \
-            --name tender-api \
-            --resource-group tender-rg \
-            --image ${{ steps.acr-info.outputs.acr_login_server }}/tender-api:${{ github.sha }}
+          # Обновляем Container App с нашим образом
+          CONTAINER_APP_NAME=$(az containerapp list --resource-group tender-rg --query "[?contains(name, 'tender')].name" -o tsv)
+
+          if [ -n "$CONTAINER_APP_NAME" ]; then
+            az containerapp update \
+              --name $CONTAINER_APP_NAME \
+              --resource-group tender-rg \
+              --image ${{ steps.acr-info.outputs.acr_login_server }}/tender-api:${{ github.sha }}
+            
+            echo "Updated Container App: $CONTAINER_APP_NAME"
+          else
+            echo "No Container App found, using infrastructure deployment"
+          fi
 
   test-deployment:
     runs-on: ubuntu-latest
-    needs: [build-and-deploy-api]
+    needs: [build-and-deploy-api, deploy-infrastructure]
+    if: always()
 
     steps:
       - name: Test API Health
         run: |
-          API_URL="https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io"
+          if [ "${{ needs.deploy-infrastructure.result }}" == "success" ]; then
+            API_URL="${{ needs.deploy-infrastructure.outputs.api_url }}"
+          else
+            API_URL="https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io"
+          fi
 
-          echo "Testing API health..."
+          echo "Testing API health at: $API_URL"
+
           for i in {1..10}; do
             if curl -f -s "$API_URL/health"; then
               echo "✅ API is healthy"
@@ -81,8 +150,16 @@ jobs:
           echo "Testing full API status..."
           curl -s "$API_URL/"
 
+          echo "Testing debug endpoint..."
+          curl -s "$API_URL/api/debug-env"
+
       - name: Summary
         run: |
           echo "🎉 Deployment completed successfully!"
-          echo "📊 API URL: https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io"
-          echo "📚 API Docs: https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io/docs"
+          if [ "${{ needs.deploy-infrastructure.result }}" == "success" ]; then
+            echo "📊 API URL: ${{ needs.deploy-infrastructure.outputs.api_url }}"
+            echo "📚 API Docs: ${{ needs.deploy-infrastructure.outputs.api_url }}/docs"
+          else
+            echo "📊 API URL: https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io"
+            echo "📚 API Docs: https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io/docs"
+          fi

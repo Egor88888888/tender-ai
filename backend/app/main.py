@@ -115,6 +115,17 @@ def create_app() -> FastAPI:
         """Health-check endpoint for Azure Container Apps."""
         return {"status": "healthy", "service": "tender-ai-full-stack"}
 
+    @app.get("/api/debug-env")
+    async def debug_env():
+        """Debug endpoint to check environment variables (ONLY for development)."""
+        return {
+            "DATABASE_URL": "SET" if DATABASE_URL else "NOT_SET",
+            "AZURE_STORAGE_CONNECTION_STRING": "SET" if AZURE_STORAGE_CONNECTION_STRING else "NOT_SET",
+            "COGNITIVE_SERVICES_KEY": "SET" if COGNITIVE_SERVICES_KEY else "NOT_SET",
+            "COGNITIVE_SERVICES_ENDPOINT": COGNITIVE_SERVICES_ENDPOINT if COGNITIVE_SERVICES_ENDPOINT else "NOT_SET",
+            "GEMINI_API_KEY": "SET" if GEMINI_API_KEY else "NOT_SET"
+        }
+
     @app.post("/api/upload-document")
     async def upload_document(file: UploadFile = File(...)):
         """Upload and analyze document using Azure OCR."""
