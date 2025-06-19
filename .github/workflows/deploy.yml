@@ -30,7 +30,8 @@ jobs:
 
       - name: Build and push Docker images
         run: |
-          DOCKER_BUILDKIT=0 docker build -t $REGISTRY/tender-api:$IMAGE_TAG -f backend/Dockerfile .
+          cd backend
+          DOCKER_BUILDKIT=0 docker build -t $REGISTRY/tender-api:$IMAGE_TAG .
           docker tag $REGISTRY/tender-api:$IMAGE_TAG $REGISTRY/tender-api:latest
           docker push $REGISTRY/tender-api:$IMAGE_TAG
           docker push $REGISTRY/tender-api:latest
