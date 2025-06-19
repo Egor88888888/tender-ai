@@ -23,29 +23,10 @@ jobs:
         run: |
           az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
 
-      - name: Set image tags
-        id: tags
-        run: |
-          # Try different secret names and fallback to known registry
-          REGISTRY="${{ secrets.ACR_LOGIN_SERVER }}"
-          if [ -z "$REGISTRY" ]; then
-            REGISTRY="${{ secrets.REGISTRY_LOGIN_SERVER }}"
-          fi
-          if [ -z "$REGISTRY" ]; then
-            REGISTRY="tenderregistry.azurecr.io"
-          fi
-          IMAGE_TAG="${{ github.sha }}"
-          echo "registry=${REGISTRY}" >> $GITHUB_OUTPUT
-          echo "image-tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-          echo "full-tag=${REGISTRY}/tender-api:${IMAGE_TAG}" >> $GITHUB_OUTPUT
-          echo "latest-tag=${REGISTRY}/tender-api:latest" >> $GITHUB_OUTPUT
-          echo "Registry used: ${REGISTRY}"
-          echo "Image: tender-api:${IMAGE_TAG}"
-
       - name: Log in to ACR
         uses: docker/login-action@v3
         with:
-          registry: ${{ steps.tags.outputs.registry }}
+          registry: tenderregistry.azurecr.io
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
@@ -55,9 +36,9 @@ jobs:
           context: ./backend
           push: true
           tags: |
-            ${{ steps.tags.outputs.full-tag }}
-            ${{ steps.tags.outputs.latest-tag }}
+            tenderregistry.azurecr.io/tender-api:${{ github.sha }}
+            tenderregistry.azurecr.io/tender-api:latest
 
       - name: Deploy using Bicep template
         run: |
-          az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep --parameters apiImage=${{ env.REGISTRY }}/tender-api:${{ env.IMAGE_TAG }} workerImage=${{ env.REGISTRY }}/tender-api:${{ env.IMAGE_TAG }}
+          az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep --parameters apiImage=tenderregistry.azurecr.io/tender-api:${{ github.sha }} workerImage=tenderregistry.azurecr.io/tender-api:${{ github.sha }}
