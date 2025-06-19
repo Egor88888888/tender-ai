@@ -75,4 +75,18 @@ jobs:
       - name: Update Container App
         run: |
           echo "Updating Container App with image: ${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}"
-          az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/update-app.bicep --parameters apiImage="${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}"
+
+          # Check if Container App exists
+          if az containerapp show --name tender-api --resource-group ${{ env.RG_NAME }} >/dev/null 2>&1; then
+            echo "Container App exists, updating image..."
+            az containerapp update \
+              --name tender-api \
+              --resource-group ${{ env.RG_NAME }} \
+              --image "${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}"
+          else
+            echo "Container App does not exist, creating with deployment..."
+            az deployment group create \
+              --resource-group ${{ env.RG_NAME }} \
+              --template-file infra/azuredeploy.bicep \
+              --parameters apiImage="${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}"
+          fi
