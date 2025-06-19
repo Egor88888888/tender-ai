@@ -1,6 +1,5 @@
 name: Deploy to Azure
 
-
 on:
   push:
     branches:
@@ -37,9 +36,9 @@ jobs:
           context: ./backend
           push: true
           tags: |
-            ${{ env.REGISTRY }}/tender-api:${{ env.IMAGE_TAG }}
-            ${{ env.REGISTRY }}/tender-api:latest
+            ${{ secrets.ACR_LOGIN_SERVER }}/tender-api:${{ github.sha }}
+            ${{ secrets.ACR_LOGIN_SERVER }}/tender-api:latest
 
       - name: Deploy using Bicep template
         run: |
-          az deployment group create --resource-group $RG_NAME --template-file infra/azuredeploy.bicep --parameters apiImage=$REGISTRY/tender-api:$IMAGE_TAG workerImage=$REGISTRY/tender-api:$IMAGE_TAG
+          az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep --parameters apiImage=${{ env.REGISTRY }}/tender-api:${{ env.IMAGE_TAG }} workerImage=${{ env.REGISTRY }}/tender-api:${{ env.IMAGE_TAG }}
