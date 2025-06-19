@@ -1,19 +1,36 @@
-fastapi==0.115.2
-uvicorn[standard]
-sqlalchemy>=2.0
-asyncpg
-pgvector
-pydantic>=2
-python-multipart
-passlib[bcrypt]
-python-jose[cryptography]
-celery[redis]
-redis
-minio
-pytesseract
-Pillow
-google-generativeai>=0.5
-transformers
-spacy
-natasha
-azure-storage-blob 
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+
+# Azure SDK
+azure-storage-blob==12.19.0
+azure-identity==1.15.0
+azure-keyvault-secrets==4.7.0
+azure-cognitiveservices-vision-computervision==0.9.0
+azure-ai-formrecognizer==3.3.0
+msrest==0.7.1
+
+# Database
+asyncpg==0.29.0
+sqlalchemy[asyncio]==2.0.23
+alembic==1.13.1
+
+# AI and ML
+google-generativeai==0.3.2
+pillow==10.1.0
+pytesseract==0.3.10
+
+# HTTP client
+httpx==0.25.2
+aiohttp==3.9.1
+
+# Monitoring
+opencensus-ext-azure==1.1.13
+applicationinsights==0.11.10
+
+# Utilities
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-dateutil==2.8.2
+pydantic-settings==2.1.0 

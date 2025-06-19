@@ -309,4 +309,4 @@ output staticWebAppUrl string = 'https://${staticWebApp.properties.defaultHostna
 output databaseHost string = postgresServer.properties.fullyQualifiedDomainName
 output cognitiveServicesEndpoint string = cognitiveServices.properties.endpoint
 output keyVaultName string = kv.name
-output storageAccountName string = sa.name
+output storageAccountName string = sa.name 
