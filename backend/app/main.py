@@ -130,16 +130,12 @@ def create_app() -> FastAPI:
     async def upload_document(file: UploadFile = File(...)):
         """Upload and analyze document using Azure OCR."""
         if not blob_service_client:
-            # Мок для тестирования без blob storage
-            content = await file.read()
-            return {
-                "status": "success (mock)",
-                "filename": file.filename,
-                "blob_url": f"mock://storage/{file.filename}",
-                "ocr_text": "Мок OCR результат: Это тестовый документ для анализа тендера. Основные требования: поставка оборудования, срок выполнения 30 дней, бюджет 1 000 000 рублей.",
-                "size": len(content),
-                "note": "Azure Blob Storage not configured - using mock data"
-            }
+            raise HTTPException(
+                status_code=503, detail="Blob storage not configured")
+
+        if not computer_vision_client:
+            raise HTTPException(
+                status_code=503, detail="Computer Vision not configured")
 
         try:
             # Upload to blob storage
@@ -152,36 +148,34 @@ def create_app() -> FastAPI:
             blob_client.upload_blob(content, overwrite=True)
 
             # Analyze with Computer Vision OCR
-            ocr_result = None
-            if computer_vision_client:
-                try:
-                    blob_url = blob_client.url
-                    read_operation = computer_vision_client.read(
-                        blob_url, raw=True)
-                    operation_id = read_operation.headers["Operation-Location"].split(
-                        "/")[-1]
+            try:
+                blob_url = blob_client.url
+                read_operation = computer_vision_client.read(
+                    blob_url, raw=True)
+                operation_id = read_operation.headers["Operation-Location"].split(
+                    "/")[-1]
 
-                    # Wait for OCR to complete
-                    import time
-                    while True:
-                        read_result = computer_vision_client.get_read_result(
-                            operation_id)
-                        if read_result.status not in ['notStarted', 'running']:
-                            break
-                        time.sleep(1)
+                # Wait for OCR to complete
+                import time
+                while True:
+                    read_result = computer_vision_client.get_read_result(
+                        operation_id)
+                    if read_result.status not in ['notStarted', 'running']:
+                        break
+                    time.sleep(1)
 
-                    if read_result.status == OperationStatusCodes.succeeded:
-                        text_results = []
-                        for text_result in read_result.analyze_result.read_results:
-                            for line in text_result.lines:
-                                text_results.append(line.text)
-                        ocr_result = "\n".join(text_results)
-                except Exception as e:
-                    logger.error(f"OCR error: {e}")
-                    ocr_result = "OCR failed"
-            else:
-                # Мок OCR если Computer Vision не настроен
-                ocr_result = "Мок OCR результат: Обнаружен документ тендера с основными требованиями"
+                if read_result.status == OperationStatusCodes.succeeded:
+                    text_results = []
+                    for text_result in read_result.analyze_result.read_results:
+                        for line in text_result.lines:
+                            text_results.append(line.text)
+                    ocr_result = "\n".join(text_results)
+                else:
+                    ocr_result = "OCR processing failed"
+            except Exception as e:
+                logger.error(f"OCR error: {e}")
+                raise HTTPException(
+                    status_code=500, detail=f"OCR processing failed: {str(e)}")
 
             return {
                 "status": "success",
@@ -231,74 +225,26 @@ def create_app() -> FastAPI:
     @app.get("/api/tenders")
     async def get_tenders(db: AsyncSession = Depends(get_db)):
         """Get all tenders from database."""
-        try:
-            # Попытка подключения к базе данных
-            # This would query the actual database
-            # For now, return sample data
-            return {
-                "tenders": [
-                    {
-                        "id": 1,
-                        "title": "Поставка компьютерного оборудования",
-                        "budget": 1000000,
-                        "deadline": "2024-02-01",
-                        "status": "active"
-                    }
-                ]
-            }
-        except HTTPException:
-            # Если база не подключена, возвращаем мок данные
-            return {
-                "status": "mock_data",
-                "note": "Database not configured - using mock data",
-                "tenders": [
-                    {
-                        "id": 1,
-                        "title": "Поставка компьютерного оборудования",
-                        "budget": 1000000,
-                        "deadline": "2024-02-01",
-                        "status": "active",
-                        "description": "Тестовый тендер для демонстрации функционала"
-                    },
-                    {
-                        "id": 2,
-                        "title": "Разработка программного обеспечения",
-                        "budget": 2500000,
-                        "deadline": "2024-03-15",
-                        "status": "active",
-                        "description": "Создание веб-приложения для тендерного анализа"
-                    },
-                    {
-                        "id": 3,
-                        "title": "Консультационные услуги по ИТ",
-                        "budget": 500000,
-                        "deadline": "2024-02-20",
-                        "status": "closed",
-                        "description": "Аудит ИТ-инфраструктуры и рекомендации"
-                    }
-                ]
-            }
+        # This would query the actual database
+        # For now, return sample data until database schema is created
+        return {
+            "tenders": [
+                {
+                    "id": 1,
+                    "title": "Поставка компьютерного оборудования",
+                    "budget": 1000000,
+                    "deadline": "2024-02-01",
+                    "status": "active"
+                }
+            ]
+        }
 
     @app.get("/api/storage-info")
     async def get_storage_info():
         """Get storage container information."""
         if not blob_service_client:
-            return {
-                "status": "mock_data",
-                "note": "Azure Blob Storage not configured - using mock data",
-                "containers": [
-                    {
-                        "name": "documents",
-                        "blob_count": 5,
-                        "description": "Мок контейнер для документов"
-                    },
-                    {
-                        "name": "processed",
-                        "blob_count": 3,
-                        "description": "Мок контейнер для обработанных файлов"
-                    }
-                ]
-            }
+            raise HTTPException(
+                status_code=503, detail="Blob storage not configured")
 
         try:
             containers = []
