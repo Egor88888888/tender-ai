@@ -1,0 +1,101 @@
+name: 🔄 FORCE RESTART CONTAINER
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "FORCE_RESTART_NOW.md"
+  workflow_dispatch:
+
+jobs:
+  force-restart:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🔥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔐 Azure Login
+        run: |
+          az login --service-principal \
+            --username ${{ secrets.AZURE_CLIENT_ID }} \
+            --password ${{ secrets.AZURE_CLIENT_SECRET }} \
+            --tenant ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: 🔄 FORCE UPDATE AND RESTART CONTAINER APP
+        run: |
+          echo "🔄 ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ И ПЕРЕЗАПУСК..."
+
+          # Get resource info
+          POSTGRES_NAME=$(az postgres flexible-server list -g tender-rg --query '[0].name' -o tsv)
+          COGNITIVE_NAME=$(az cognitiveservices account list -g tender-rg --query '[0].name' -o tsv)
+          STORAGE_NAME=$(az storage account list -g tender-rg --query '[0].name' -o tsv)
+
+          echo "📊 Resources found:"
+          echo "  PostgreSQL: $POSTGRES_NAME"
+          echo "  Cognitive: $COGNITIVE_NAME"
+          echo "  Storage: $STORAGE_NAME"
+
+          if [ ! -z "$POSTGRES_NAME" ] && [ ! -z "$COGNITIVE_NAME" ] && [ ! -z "$STORAGE_NAME" ]; then
+            # Generate connection strings
+            POSTGRES_HOST=$(az postgres flexible-server show -g tender-rg -n $POSTGRES_NAME --query 'fullyQualifiedDomainName' -o tsv)
+            DATABASE_URL="postgresql://tenderadmin:TenderAI_2024_SecurePass!@${POSTGRES_HOST}:5432/tenderdb?sslmode=require"
+            
+            COGNITIVE_KEY=$(az cognitiveservices account keys list -g tender-rg -n $COGNITIVE_NAME --query 'key1' -o tsv)
+            COGNITIVE_ENDPOINT=$(az cognitiveservices account show -g tender-rg -n $COGNITIVE_NAME --query 'properties.endpoint' -o tsv)
+            
+            STORAGE_KEY=$(az storage account keys list -g tender-rg --account-name $STORAGE_NAME --query '[0].value' -o tsv)
+            STORAGE_CONN="DefaultEndpointsProtocol=https;AccountName=${STORAGE_NAME};AccountKey=${STORAGE_KEY};EndpointSuffix=core.windows.net"
+            
+            echo "✅ Connection strings ready"
+            echo "Database URL: ${DATABASE_URL:0:50}..."
+            echo "Cognitive Endpoint: $COGNITIVE_ENDPOINT"
+            echo "Storage Account: $STORAGE_NAME"
+            
+            # FORCE UPDATE with revision name
+            echo "🔧 FORCE updating Container App with revision..."
+            TIMESTAMP=$(date +%s)
+            az containerapp update \
+              --name tender-api \
+              --resource-group tender-rg \
+              --revision-suffix "auto-fix-$TIMESTAMP" \
+              --set-env-vars \
+                DATABASE_URL="$DATABASE_URL" \
+                COGNITIVE_SERVICES_KEY="$COGNITIVE_KEY" \
+                COGNITIVE_SERVICES_ENDPOINT="$COGNITIVE_ENDPOINT" \
+                AZURE_STORAGE_CONNECTION_STRING="$STORAGE_CONN" \
+                GEMINI_API_KEY="test-key-placeholder"
+            
+            echo "⏳ Waiting for Container App restart..."
+            sleep 90
+            
+            echo "🔄 FORCE RESTART Container App..."
+            az containerapp revision restart \
+              --name tender-api \
+              --resource-group tender-rg \
+              --revision "tender-api--auto-fix-$TIMESTAMP"
+            
+            echo "⏳ Additional wait for full restart..."
+            sleep 60
+            
+            echo "✅ FORCE RESTART COMPLETED!"
+            
+          else
+            echo "❌ Some resources not found"
+            exit 1
+          fi
+
+      - name: 🧪 VERIFY AFTER FORCE RESTART
+        run: |
+          echo "🧪 Verifying after FORCE RESTART..."
+          API_URL="https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io"
+
+          echo "=== DEBUG ENV VARIABLES ==="
+          curl -s "$API_URL/api/debug-env" || echo "Debug endpoint not responding"
+
+          echo ""
+          echo "=== API STATUS ==="
+          curl -s "$API_URL/" || echo "API not responding"
+
+          echo ""
+          echo "🎯 FORCE RESTART VERIFICATION COMPLETED!"
