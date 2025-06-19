@@ -53,14 +53,7 @@ resource kv 'Microsoft.KeyVault/vaults@2023-02-01' = {
   }
 }
 
-// Example secret: Gemini API Key (to be set post-deploy)
-resource geminiSecret 'Microsoft.KeyVault/vaults/secrets@2023-02-01' = {
-  parent: kv
-  name: 'GEMINI-API-KEY'
-  properties: {
-    value: 'TO-BE-SET'
-  }
-}
+// Note: Gemini API Key to be set manually in Key Vault post-deploy
 
 // Container Apps environment
 resource cae 'Microsoft.App/managedEnvironments@2023-05-01' = {
@@ -79,7 +72,7 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
       secrets: [
         {
           name: 'gemini-api-key'
-          value: geminiSecret.properties.value
+          value: 'TO-BE-SET-MANUALLY'
         }
         {
           name: 'storage-conn'
