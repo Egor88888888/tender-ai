@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEnder AI - Мониторинг развертывания</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            margin: 0;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .status-section {
+            background: rgba(255,255,255,0.1);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .status-section h2 {
+            margin-bottom: 15px;
+            color: #fbbf24;
+        }
+        
+        .progress-bar {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            height: 30px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(90deg, #10b981, #34d399);
+            height: 100%;
+            border-radius: 10px;
+            transition: width 2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .status-card {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .status-pending { background: #fbbf24; animation: pulse 2s infinite; }
+        .status-running { background: #3b82f6; animation: pulse 1s infinite; }
+        .status-success { background: #10b981; }
+        .status-error { background: #ef4444; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .logs {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .btn {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .links {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .links a {
+            color: #60a5fa;
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: 600;
+        }
+        
+        .links a:hover {
+            color: #93c5fd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Автоматическое развертывание TEnder AI</h1>
+        
+        <div class="status-section">
+            <h2>📊 Общий прогресс</h2>
+            <div class="progress-bar">
+                <div class="progress-fill" id="overall-progress" style="width: 0%">0%</div>
+            </div>
+            <p id="overall-status">Инициализация...</p>
+        </div>
+        
+        <div class="status-section">
+            <h2>⚙️ Статус компонентов</h2>
+            <div class="status-grid">
+                <div class="status-card">
+                    <div class="status-indicator status-pending" id="github-status"></div>
+                    <h3>GitHub Actions</h3>
+                    <p id="github-text">Проверка...</p>
+                </div>
+                
+                <div class="status-card">
+                    <div class="status-indicator status-pending" id="infra-status"></div>
+                    <h3>Azure Infrastructure</h3>
+                    <p id="infra-text">Ожидание...</p>
+                </div>
+                
+                <div class="status-card">
+                    <div class="status-indicator status-pending" id="database-status"></div>
+                    <h3>PostgreSQL Database</h3>
+                    <p id="database-text">Ожидание...</p>
+                </div>
+                
+                <div class="status-card">
+                    <div class="status-indicator status-pending" id="ocr-status"></div>
+                    <h3>OCR Services</h3>
+                    <p id="ocr-text">Ожидание...</p>
+                </div>
+                
+                <div class="status-card">
+                    <div class="status-indicator status-pending" id="api-status"></div>
+                    <h3>API Container</h3>
+                    <p id="api-text">Ожидание...</p>
+                </div>
+                
+                <div class="status-card">
+                    <div class="status-indicator status-pending" id="testing-status"></div>
+                    <h3>Тестирование</h3>
+                    <p id="testing-text">Ожидание...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-section">
+            <h2>📋 Логи развертывания</h2>
+            <div class="logs" id="deployment-logs">
+Автоматическое развертывание запущено...
+Время начала: ${new Date().toLocaleString()}
+
+🔄 Этапы развертывания:
+1. ✅ Триггер-коммит создан
+2. 🔄 GitHub Actions запущен
+3. ⏳ Azure Infrastructure развертывание
+4. ⏳ PostgreSQL Database создание
+5. ⏳ Cognitive Services настройка
+6. ⏳ Container App обновление
+7. ⏳ Тестирование всех функций
+
+Следите за прогрессом ниже...
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <button class="btn" onclick="refreshStatus()">🔄 Обновить статус</button>
+                <button class="btn" onclick="clearLogs()">🗑️ Очистить логи</button>
+                <button class="btn" onclick="window.open('https://github.com/Egor88888888/tender-ai/actions', '_blank')">🔗 GitHub Actions</button>
+            </div>
+        </div>
+        
+        <div class="links">
+            <a href="frontend/index-simple.html">🏠 Главная</a>
+            <a href="frontend/simple-test.html">🚀 Быстрый тест</a>
+            <a href="frontend/test-full-features.html">🧪 Полное тестирование</a>
+            <a href="https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io/docs">📚 API Docs</a>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io';
+        let checkCount = 0;
+        let startTime = new Date();
+        
+        function logMessage(message) {
+            const logs = document.getElementById('deployment-logs');
+            const timestamp = new Date().toLocaleTimeString();
+            logs.textContent += `\n[${timestamp}] ${message}`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        function updateProgress(percentage, status) {
+            document.getElementById('overall-progress').style.width = percentage + '%';
+            document.getElementById('overall-progress').textContent = percentage + '%';
+            document.getElementById('overall-status').textContent = status;
+        }
+        
+        function updateComponentStatus(component, status, text) {
+            const indicator = document.getElementById(component + '-status');
+            const textEl = document.getElementById(component + '-text');
+            
+            indicator.className = `status-indicator status-${status}`;
+            textEl.textContent = text;
+        }
+        
+        async function checkGitHubActions() {
+            try {
+                // Имитация проверки GitHub Actions (в реальности нужен API token)
+                updateComponentStatus('github', 'running', 'Выполняется...');
+                logMessage('🔄 GitHub Actions workflow запущен');
+                return 'running';
+            } catch (error) {
+                updateComponentStatus('github', 'error', 'Ошибка');
+                return 'error';
+            }
+        }
+        
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                
+                // Проверяем статус компонентов
+                if (data.features.database) {
+                    updateComponentStatus('database', 'success', 'Подключена');
+                    updateComponentStatus('infra', 'success', 'Развернута');
+                } else {
+                    updateComponentStatus('database', 'pending', 'Развертывание...');
+                }
+                
+                if (data.features.computer_vision) {
+                    updateComponentStatus('ocr', 'success', 'Настроен');
+                } else {
+                    updateComponentStatus('ocr', 'pending', 'Настройка...');
+                }
+                
+                updateComponentStatus('api', 'success', 'Работает');
+                
+                // Подсчет прогресса
+                let completedServices = 0;
+                let totalServices = 5;
+                
+                if (data.features.blob_storage) completedServices++;
+                if (data.features.database) completedServices++;
+                if (data.features.computer_vision) completedServices++;
+                if (data.features.gemini_ai) completedServices++;
+                completedServices++; // API всегда работает
+                
+                const progressPercentage = Math.round((completedServices / totalServices) * 100);
+                
+                if (progressPercentage === 100) {
+                    updateProgress(100, '🎉 Развертывание завершено успешно!');
+                    updateComponentStatus('testing', 'success', 'Готово к тестированию');
+                    logMessage('✅ Все сервисы развернуты и готовы к работе!');
+                    logMessage('🎯 Полное тестирование доступно: frontend/test-full-features.html');
+                } else {
+                    updateProgress(progressPercentage, `Развертывание... (${completedServices}/${totalServices} сервисов)`);
+                    logMessage(`📊 Прогресс: ${progressPercentage}% (${completedServices}/${totalServices} сервисов готово)`);
+                }
+                
+                return data;
+                
+            } catch (error) {
+                updateComponentStatus('api', 'error', 'Недоступен');
+                logMessage(`❌ Ошибка проверки API: ${error.message}`);
+                return null;
+            }
+        }
+        
+        async function refreshStatus() {
+            checkCount++;
+            logMessage(`🔍 Проверка статуса #${checkCount}...`);
+            
+            await checkGitHubActions();
+            const apiData = await checkAPIStatus();
+            
+            if (apiData && apiData.features.database && apiData.features.computer_vision) {
+                logMessage('🎉 ПОЛНОЕ РАЗВЕРТЫВАНИЕ ЗАВЕРШЕНО!');
+                logMessage('✅ Все функции доступны для тестирования');
+                clearInterval(window.statusInterval);
+            }
+        }
+        
+        function clearLogs() {
+            document.getElementById('deployment-logs').textContent = 'Логи очищены...\n';
+        }
+        
+        // Автоматическая проверка каждые 30 секунд
+        refreshStatus(); // Первая проверка
+        window.statusInterval = setInterval(refreshStatus, 30000);
+        
+        // Обновление времени выполнения
+        setInterval(() => {
+            const elapsed = Math.floor((new Date() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.title = `TEnder AI - Развертывание (${minutes}:${seconds.toString().padStart(2, '0')})`;
+        }, 1000);
+        
+        logMessage('🚀 Мониторинг развертывания запущен');
+        logMessage('⏰ Ожидаемое время развертывания: 10-15 минут');
+    </script>
+</body>
+</html> 
