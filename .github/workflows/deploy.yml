@@ -72,15 +72,20 @@ jobs:
             ${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}
             ${{ steps.deploy.outputs.acr_server }}/tender-api:latest
 
-      - name: Update Container App with Registry Credentials
+      - name: Update Container App Configuration
         run: |
           echo "Updating Container App with image: ${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}"
 
-          # Update Container App with registry credentials
+          # First, set the registry credentials
+          az containerapp registry set \
+            --name tender-api \
+            --resource-group ${{ env.RG_NAME }} \
+            --server "${{ steps.deploy.outputs.acr_server }}" \
+            --username "${{ steps.acr_creds.outputs.acr_username }}" \
+            --password "${{ steps.acr_creds.outputs.acr_password }}"
+
+          # Then update the image
           az containerapp update \
             --name tender-api \
             --resource-group ${{ env.RG_NAME }} \
-            --image "${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}" \
-            --registry-server "${{ steps.deploy.outputs.acr_server }}" \
-            --registry-username "${{ steps.acr_creds.outputs.acr_username }}" \
-            --registry-password "${{ steps.acr_creds.outputs.acr_password }}"
+            --image "${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}"
