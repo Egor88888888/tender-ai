@@ -23,10 +23,19 @@ jobs:
         run: |
           az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
 
+      - name: Deploy Infrastructure
+        id: deploy
+        run: |
+          deployment_output=$(az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep --output json)
+          echo "deployment_output=$deployment_output" >> $GITHUB_OUTPUT
+          acr_server=$(echo $deployment_output | jq -r '.properties.outputs.acrLoginServer.value')
+          echo "acr_server=$acr_server" >> $GITHUB_OUTPUT
+          echo "ACR Server: $acr_server"
+
       - name: Log in to ACR
         uses: docker/login-action@v3
         with:
-          registry: tenderacr.azurecr.io
+          registry: ${{ steps.deploy.outputs.acr_server }}
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
@@ -36,9 +45,9 @@ jobs:
           context: ./backend
           push: true
           tags: |
-            tenderacr.azurecr.io/tender-api:${{ github.sha }}
-            tenderacr.azurecr.io/tender-api:latest
+            ${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}
+            ${{ steps.deploy.outputs.acr_server }}/tender-api:latest
 
-      - name: Deploy using Bicep template
+      - name: Update Container App
         run: |
-          az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep --parameters apiImage=tenderacr.azurecr.io/tender-api:${{ github.sha }}
+          az deployment group create --resource-group ${{ env.RG_NAME }} --template-file infra/azuredeploy.bicep --parameters apiImage=${{ steps.deploy.outputs.acr_server }}/tender-api:${{ github.sha }}

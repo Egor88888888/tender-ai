@@ -7,9 +7,9 @@ param project string = 'tender'
 
 @description('Container image tag for API')
 param apiImage string
-var acrName = '${project}acr'
+var acrName = '${project}acr${uniqueString(resourceGroup().id)}'
 var saName = uniqueString('${project}sa')
-var kvName = '${project}-kv'
+var kvName = '${project}-kv-${uniqueString(resourceGroup().id)}'
 var envName = '${project}-ca-env'
 
 resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
@@ -116,3 +116,7 @@ resource apiApp 'Microsoft.App/containerApps@2023-05-01' = {
   }
   dependsOn: [cae, acr]
 } 
+
+// Outputs
+output acrLoginServer string = acr.properties.loginServer
+output acrName string = acr.name
