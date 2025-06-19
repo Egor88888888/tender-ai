@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEnder AI - Тестирование</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 50px 20px;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .description {
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .btn {
+            padding: 15px 30px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        .btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .status {
+            margin-top: 40px;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        .status-item {
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #fbbf24;
+        }
+        .status-ok { background: #10b981; }
+        .status-error { background: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 TEnder AI</h1>
+        <p class="description">
+            Полнофункциональная платформа для анализа тендеров<br>
+            с использованием Azure AI и машинного обучения
+        </p>
+        
+        <div class="buttons">
+            <a href="test-full-features.html" class="btn">
+                🧪 Полное тестирование всех функций
+            </a>
+            <a href="https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io/docs" class="btn" target="_blank">
+                📚 API Документация (Swagger)
+            </a>
+            <a href="https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io/" class="btn" target="_blank">
+                🔍 Статус API
+            </a>
+        </div>
+        
+        <div class="status">
+            <h3>Статус системы</h3>
+            <div class="status-item">
+                <span>API Сервер</span>
+                <div class="status-indicator" id="api-status"></div>
+            </div>
+            <div class="status-item">
+                <span>База данных</span>
+                <div class="status-indicator" id="db-status"></div>
+            </div>
+            <div class="status-item">
+                <span>OCR/Computer Vision</span>
+                <div class="status-indicator" id="ocr-status"></div>
+            </div>
+            <div class="status-item">
+                <span>Gemini AI</span>
+                <div class="status-indicator" id="ai-status"></div>
+            </div>
+            <div class="status-item">
+                <span>Blob Storage</span>
+                <div class="status-indicator" id="storage-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://tender-api.bravesmoke-248b9fb5.westeurope.azurecontainerapps.io';
+        
+        async function checkStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                
+                document.getElementById('api-status').className = 'status-indicator status-ok';
+                document.getElementById('db-status').className = `status-indicator ${data.features.database ? 'status-ok' : 'status-error'}`;
+                document.getElementById('ocr-status').className = `status-indicator ${data.features.computer_vision ? 'status-ok' : 'status-error'}`;
+                document.getElementById('ai-status').className = `status-indicator ${data.features.gemini_ai ? 'status-ok' : 'status-error'}`;
+                document.getElementById('storage-status').className = `status-indicator ${data.features.blob_storage ? 'status-ok' : 'status-error'}`;
+                
+            } catch (error) {
+                document.querySelectorAll('.status-indicator').forEach(el => {
+                    el.className = 'status-indicator status-error';
+                });
+            }
+        }
+        
+        checkStatus();
+        setInterval(checkStatus, 30000); // Обновляем каждые 30 секунд
+    </script>
+</body>
+</html> 
